@@ -1,0 +1,126 @@
+# Package "Morgenbriefing" – Standard-News-Sensoren
+#
+# Einbinden in configuration.yaml:
+#   homeassistant:
+#     packages: !include_dir_named packages
+# …und diese Datei nach /config/packages/morgenbriefing.yaml kopieren.
+#
+# Voraussetzung: HACS-Integration "feedparser" (custom-components/feedparser).
+#
+# Namenskonvention: Sensoren heißen "MB <Name>" -> entity_id sensor.mb_<name>.
+# Die Morgenbriefing-Karte findet Preset-Sensoren darüber automatisch
+# (preset: tagesschau -> sensor.mb_tagesschau). Nicht benötigte Sensoren
+# einfach auskommentiert lassen.
+
+sensor:
+  # ── Standard: national ────────────────────────────────────────────────
+  - platform: feedparser
+    name: MB Tagesschau
+    feed_url: "https://www.tagesschau.de/index~rss2.xml"
+    date_format: "%d.%m. %H:%M"
+    local_time: true
+    scan_interval:
+      minutes: 30
+    inclusions: [title, link, published]
+
+  # ── Regional: passenden Block einkommentieren ────────────────────────
+  # NRW (WDR)
+  # - platform: feedparser
+  #   name: MB WDR
+  #   feed_url: "https://www1.wdr.de/uebersicht-100.feed"
+  #   date_format: "%d.%m. %H:%M"
+  #   local_time: true
+  #   scan_interval: { minutes: 30 }
+  #   inclusions: [title, link, published]
+
+  # Niedersachsen (NDR)
+  # - platform: feedparser
+  #   name: MB NDR Niedersachsen
+  #   feed_url: "https://www.ndr.de/nachrichten/niedersachsen/index-rss.xml"
+  #   date_format: "%d.%m. %H:%M"
+  #   local_time: true
+  #   scan_interval: { minutes: 30 }
+  #   inclusions: [title, link, published]
+
+  # Schleswig-Holstein (NDR)
+  # - platform: feedparser
+  #   name: MB NDR SH
+  #   feed_url: "https://www.ndr.de/nachrichten/schleswig-holstein/index-rss.xml"
+  #   date_format: "%d.%m. %H:%M"
+  #   local_time: true
+  #   scan_interval: { minutes: 30 }
+  #   inclusions: [title, link, published]
+
+  # Hamburg (NDR)
+  # - platform: feedparser
+  #   name: MB NDR Hamburg
+  #   feed_url: "https://www.ndr.de/nachrichten/hamburg/index-rss.xml"
+  #   date_format: "%d.%m. %H:%M"
+  #   local_time: true
+  #   scan_interval: { minutes: 30 }
+  #   inclusions: [title, link, published]
+
+  # Mecklenburg-Vorpommern (NDR)
+  # - platform: feedparser
+  #   name: MB NDR MV
+  #   feed_url: "https://www.ndr.de/nachrichten/mecklenburg-vorpommern/index-rss.xml"
+  #   date_format: "%d.%m. %H:%M"
+  #   local_time: true
+  #   scan_interval: { minutes: 30 }
+  #   inclusions: [title, link, published]
+
+  # Hessen (hessenschau)
+  # - platform: feedparser
+  #   name: MB Hessenschau
+  #   feed_url: "https://www.hessenschau.de/index.rss"
+  #   date_format: "%d.%m. %H:%M"
+  #   local_time: true
+  #   scan_interval: { minutes: 30 }
+  #   inclusions: [title, link, published]
+
+  # Sachsen / Sachsen-Anhalt / Thüringen (MDR)
+  # - platform: feedparser
+  #   name: MB MDR
+  #   feed_url: "https://www.mdr.de/nachrichten/index-rss.xml"
+  #   date_format: "%d.%m. %H:%M"
+  #   local_time: true
+  #   scan_interval: { minutes: 30 }
+  #   inclusions: [title, link, published]
+
+  # Berlin / Brandenburg (rbb24)
+  # - platform: feedparser
+  #   name: MB Rbb24
+  #   feed_url: "https://www.rbb24.de/aktuell/index.xml/feed=rss.xml"
+  #   date_format: "%d.%m. %H:%M"
+  #   local_time: true
+  #   scan_interval: { minutes: 30 }
+  #   inclusions: [title, link, published]
+
+  # ── Google News ───────────────────────────────────────────────────────
+  # Topmeldungen Deutschland (Preset: google_news)
+  # - platform: feedparser
+  #   name: MB Google News
+  #   feed_url: "https://news.google.com/rss?hl=de&gl=DE&ceid=DE:de"
+  #   date_format: "%d.%m. %H:%M"
+  #   local_time: true
+  #   scan_interval: { minutes: 30 }
+  #   inclusions: [title, link, published]
+
+  # Lokal-Suche: Ort oder Begriff hinter q= eintragen (URL-kodiert).
+  # Alternativ direkt in der Karte: google: "Mein Ort"
+  # - platform: feedparser
+  #   name: MB Google Lokal
+  #   feed_url: "https://news.google.com/rss/search?q=Meine%20Stadt&hl=de&gl=DE&ceid=DE:de"
+  #   date_format: "%d.%m. %H:%M"
+  #   local_time: true
+  #   scan_interval: { minutes: 30 }
+  #   inclusions: [title, link, published]
+
+  # ── Eigene Feeds: URL eintragen, Name frei wählen ────────────────────
+  # - platform: feedparser
+  #   name: Meine Lokalzeitung
+  #   feed_url: "https://beispiel.de/rss.xml"
+  #   date_format: "%d.%m. %H:%M"
+  #   local_time: true
+  #   scan_interval: { minutes: 30 }
+  #   inclusions: [title, link, published]

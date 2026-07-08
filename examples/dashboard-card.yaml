@@ -1,0 +1,38 @@
+# Morgenbriefing-Karte (custom:morgenbriefing-card)
+# Voraussetzung: www/morgenbriefing-card.js als Dashboard-Ressource eingebunden
+# (siehe README, Schritt 1).
+#
+# Jeder Abschnitt in "sections" bekommt seine Quelle auf einem von drei Wegen:
+#   preset:  mitgelieferter Standard-Feed (Liste siehe README)
+#   url:     eigener RSS/Atom-Link
+#   entity:  vorhandener Sensor mit "entries"-Attribut (z. B. Feedparser),
+#            falls du RSS in HA schon nutzt
+#   google:  Google-News-Suchfeed zu Begriff oder Ort (Lokalnachrichten!)
+
+type: custom:morgenbriefing-card
+title: Morgenbriefing
+max_items: 5
+sections:
+  # Standard-Feed (Preset). Nutzt automatisch sensor.mb_tagesschau,
+  # falls vorhanden – sonst direkter Feed-Abruf.
+  - preset: tagesschau
+
+  # Regionale Presets: wdr, ndr_niedersachsen, ndr_sh, ndr_hamburg,
+  # ndr_mv, hessenschau, mdr, rbb24
+  - preset: wdr
+    title: Meine Region
+
+  # Google News: Topmeldungen als Preset …
+  # - preset: google_news
+  # … oder Suchfeed zu Ort/Begriff (ideal für Lokalnachrichten):
+  # - title: Lokales
+  #   google: "Münster"
+
+  # Eigener RSS-Link (Titel frei wählbar):
+  # - title: Tech
+  #   url: https://www.heise.de/rss/heise-atom.xml
+
+  # Vorhandener Sensor, falls du RSS in HA bereits nutzt:
+  # - title: Lokales
+  #   entity: sensor.mein_vorhandener_feed
+  #   max_items: 3

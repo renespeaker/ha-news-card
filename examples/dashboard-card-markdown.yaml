@@ -1,0 +1,21 @@
+# Fallback ohne Custom Card: Markdown-Karte "Morgenbriefing"
+# Funktioniert nur mit Feedparser-Sensoren (siehe packages/morgenbriefing.yaml).
+# Dashboard → Bearbeiten → Karte hinzufügen → Manuell → diesen Inhalt einfügen.
+
+type: markdown
+content: >-
+  ## 📰 Morgenbriefing · {{ now().strftime('%A, %d.%m.%Y') }}
+
+  **Deutschland**
+
+  {% for e in (state_attr('sensor.mb_tagesschau', 'entries') or [])[:5] %}
+  - [{{ e.title }}]({{ e.link }})
+  {% endfor %}
+
+  ---
+
+  **Meine Region**
+
+  {% for e in (state_attr('sensor.mb_wdr', 'entries') or [])[:5] %}
+  - [{{ e.title }}]({{ e.link }})
+  {% endfor %}

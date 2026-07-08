@@ -1,0 +1,29 @@
+# Automation: News-Sensoren morgens aktualisieren + Top-3 als Push aufs Handy
+# - entity_id-Liste an die eigenen MB-Sensoren anpassen (sensor.mb_…)
+# - notify.mobile_app_dein_handy an den eigenen Gerätenamen anpassen
+#   (Entwicklerwerkzeuge → Aktionen → nach "notify.mobile_app" suchen).
+
+automation:
+  - alias: "Morgenbriefing: News aktualisieren und pushen"
+    description: >-
+      Aktualisiert um 06:00 Uhr die News-Feeds und schickt die
+      Top-3-Schlagzeilen als Benachrichtigung.
+    triggers:
+      - trigger: time
+        at: "06:00:00"
+    conditions: []
+    actions:
+      - action: homeassistant.update_entity
+        target:
+          entity_id:
+            - sensor.mb_tagesschau
+            # - sensor.mb_wdr        # eigenen Regional-Sensor ergänzen
+      - delay:
+          seconds: 15
+      - action: notify.mobile_app_dein_handy
+        data:
+          title: "📰 Morgenbriefing"
+          message: >-
+            {{ (state_attr('sensor.mb_tagesschau', 'entries') or [])[:3]
+               | map(attribute='title') | join('  •  ') }}
+    mode: single

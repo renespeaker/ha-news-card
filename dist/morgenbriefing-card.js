@@ -1,13 +1,18 @@
 /**
  * Morgenbriefing Card – News-Karte für Home Assistant
  *
- * Vier Wege, eine Quelle einzubinden (pro Abschnitt in `sections`):
+ * Fünf Wege, eine Quelle einzubinden (pro Abschnitt in `sections`):
  *   1. preset: tagesschau        – mitgelieferter Standard-Feed (auch Google News)
  *   2. url: https://…/feed.xml   – eigener RSS/Atom-Link (direkter Abruf im Browser)
  *   3. entity: sensor.mein_feed  – vorhandener Sensor (z. B. Feedparser) mit
  *                                  einem `entries`-Attribut
  *   4. google: "Suchbegriff"     – Google-News-Suchfeed, z. B. der eigene Ort
  *                                  für Lokalnachrichten (google: "Münster")
+ *   5. region: auto              – Bundesland automatisch aus dem HA-Standort
+ *                                  bestimmen und den passenden Regional-Feed
+ *                                  wählen. Mit tracker: person.xyz folgt die
+ *                                  Region der GPS-Position dieser Person.
+ *                                  Fest überschreibbar: region: bayern usw.
  *
  * Bei Presets gilt die Reihenfolge: existiert der Sensor `sensor.mb_<preset>`
  * (aus examples/packages/morgenbriefing.yaml), wird er benutzt – sonst versucht die
@@ -46,6 +51,69 @@
   // google: "Suchbegriff" -> Google-News-Suchfeed (Deutschland, deutschsprachig)
   function googleSearchUrl(term) {
     return `https://news.google.com/rss/search?q=${encodeURIComponent(term)}&hl=de&gl=DE&ceid=DE:de`;
+  }
+
+  // region: -> Bundesland-Feed. Hat ein Land keinen stabilen ARD-Feed als
+  // Preset, dient der Google-News-Suchfeed zum Bundesland als Quelle.
+  const REGIONS = {
+    schleswig_holstein:     { name: "Schleswig-Holstein",     preset: "ndr_sh" },
+    hamburg:                { name: "Hamburg",                preset: "ndr_hamburg" },
+    niedersachsen:          { name: "Niedersachsen",          preset: "ndr_niedersachsen" },
+    bremen:                 { name: "Bremen",                 google: "Bremen" },
+    mecklenburg_vorpommern: { name: "Mecklenburg-Vorpommern", preset: "ndr_mv" },
+    brandenburg:            { name: "Brandenburg",            preset: "rbb24" },
+    berlin:                 { name: "Berlin",                 preset: "rbb24" },
+    sachsen_anhalt:         { name: "Sachsen-Anhalt",         preset: "mdr" },
+    sachsen:                { name: "Sachsen",                preset: "mdr" },
+    thueringen:             { name: "Thüringen",              preset: "mdr" },
+    nordrhein_westfalen:    { name: "Nordrhein-Westfalen",    preset: "wdr" },
+    hessen:                 { name: "Hessen",                 preset: "hessenschau" },
+    rheinland_pfalz:        { name: "Rheinland-Pfalz",        google: "Rheinland-Pfalz" },
+    saarland:               { name: "Saarland",               google: "Saarland" },
+    baden_wuerttemberg:     { name: "Baden-Württemberg",      google: "Baden-Württemberg" },
+    bayern:                 { name: "Bayern",                 google: "Bayern" },
+  };
+
+  // Stützpunkte (Städte/Landesteile) für die Nächster-Punkt-Zuordnung von
+  // Koordinaten zu Bundesländern. Grob, aber für die Feed-Wahl ausreichend –
+  // an Landesgrenzen im Zweifel region: <key> fest setzen.
+  const REGION_POINTS = [
+    [54.32, 10.13, "schleswig_holstein"], [53.87, 10.69, "schleswig_holstein"], [54.78, 9.44, "schleswig_holstein"],
+    [53.55, 9.99, "hamburg"],
+    [52.37, 9.73, "niedersachsen"], [53.14, 8.21, "niedersachsen"], [53.25, 10.41, "niedersachsen"],
+    [52.27, 10.52, "niedersachsen"], [52.28, 8.05, "niedersachsen"], [53.53, 7.10, "niedersachsen"],
+    [53.52, 8.11, "niedersachsen"], [53.87, 8.70, "niedersachsen"],
+    [53.08, 8.80, "bremen"], [53.55, 8.58, "bremen"],
+    [53.63, 11.41, "mecklenburg_vorpommern"], [54.09, 12.14, "mecklenburg_vorpommern"],
+    [53.56, 13.26, "mecklenburg_vorpommern"], [54.31, 13.09, "mecklenburg_vorpommern"],
+    [52.40, 13.06, "brandenburg"], [51.75, 14.33, "brandenburg"], [52.85, 13.80, "brandenburg"],
+    [52.52, 13.40, "berlin"],
+    [52.13, 11.62, "sachsen_anhalt"], [51.48, 11.97, "sachsen_anhalt"],
+    [51.34, 12.37, "sachsen"], [51.05, 13.74, "sachsen"], [50.83, 12.92, "sachsen"], [51.16, 14.99, "sachsen"],
+    [50.98, 11.03, "thueringen"], [50.93, 11.59, "thueringen"], [50.52, 10.42, "thueringen"],
+    [50.94, 6.96, "nordrhein_westfalen"], [51.45, 7.01, "nordrhein_westfalen"], [51.51, 7.47, "nordrhein_westfalen"],
+    [51.96, 7.63, "nordrhein_westfalen"], [52.03, 8.53, "nordrhein_westfalen"], [50.73, 7.10, "nordrhein_westfalen"],
+    [50.11, 8.68, "hessen"], [51.31, 9.50, "hessen"], [50.58, 8.68, "hessen"], [49.87, 8.65, "hessen"],
+    [50.55, 9.67, "hessen"],
+    [50.00, 8.27, "rheinland_pfalz"], [49.75, 6.64, "rheinland_pfalz"], [50.35, 7.60, "rheinland_pfalz"],
+    [49.44, 7.77, "rheinland_pfalz"], [49.32, 8.43, "rheinland_pfalz"], [49.48, 8.43, "rheinland_pfalz"],
+    [49.23, 7.00, "saarland"], [49.47, 6.65, "saarland"],
+    [48.78, 9.18, "baden_wuerttemberg"], [47.99, 7.85, "baden_wuerttemberg"], [49.49, 8.47, "baden_wuerttemberg"],
+    [47.66, 9.18, "baden_wuerttemberg"], [49.01, 8.40, "baden_wuerttemberg"], [48.40, 9.99, "baden_wuerttemberg"],
+    [48.14, 11.58, "bayern"], [49.45, 11.08, "bayern"], [49.79, 9.94, "bayern"], [48.37, 10.90, "bayern"],
+    [49.02, 12.10, "bayern"], [50.32, 11.92, "bayern"], [47.57, 10.70, "bayern"], [48.57, 13.45, "bayern"],
+  ];
+
+  function nearestRegionKey(lat, lon) {
+    let best = null;
+    let bestDist = Infinity;
+    for (const [pLat, pLon, key] of REGION_POINTS) {
+      const dLat = lat - pLat;
+      const dLon = (lon - pLon) * 0.63; // Längengrad-Stauchung auf Höhe Deutschlands
+      const dist = dLat * dLat + dLon * dLon;
+      if (dist < bestDist) { bestDist = dist; best = key; }
+    }
+    return best;
   }
 
   const FETCH_TTL_MS = 15 * 60 * 1000;
@@ -95,14 +163,17 @@
 
     setConfig(config) {
       if (!Array.isArray(config.sections) || !config.sections.length) {
-        throw new Error('Bitte "sections" angeben – jeder Abschnitt braucht preset, url, entity oder google.');
+        throw new Error('Bitte "sections" angeben – jeder Abschnitt braucht preset, url, entity, google oder region.');
       }
       config.sections.forEach((s, i) => {
         if (s.preset && !PRESETS[s.preset]) {
           throw new Error(`Unbekanntes Preset "${s.preset}" (Abschnitt ${i + 1}). Verfügbar: ${Object.keys(PRESETS).join(", ")}`);
         }
-        if (!s.preset && !s.url && !s.entity && !s.google) {
-          throw new Error(`Abschnitt ${i + 1} braucht preset, url, entity oder google.`);
+        if (s.region && s.region !== "auto" && !REGIONS[String(s.region).toLowerCase()]) {
+          throw new Error(`Unbekannte Region "${s.region}" (Abschnitt ${i + 1}). Verfügbar: auto, ${Object.keys(REGIONS).join(", ")}`);
+        }
+        if (!s.preset && !s.url && !s.entity && !s.google && !s.region) {
+          throw new Error(`Abschnitt ${i + 1} braucht preset, url, entity, google oder region.`);
         }
       });
       this._config = config;
@@ -129,12 +200,57 @@
 
     _entityIds() {
       if (!this._config) return [];
-      return this._config.sections
-        .map((s) => s.entity || (s.preset ? `sensor.mb_${s.preset}` : null))
-        .filter(Boolean);
+      const ids = [];
+      for (const s of this._config.sections) {
+        if (s.entity) ids.push(s.entity);
+        if (s.preset) ids.push(`sensor.mb_${s.preset}`);
+        if (s.tracker) ids.push(s.tracker);
+        if (s.region && this._hass) {
+          const r = this._resolveRegion(s);
+          if (r.region && r.region.preset) ids.push(`sensor.mb_${r.region.preset}`);
+        }
+      }
+      return ids;
+    }
+
+    // region: auto -> Koordinaten (Tracker oder HA-Standort) -> Bundesland;
+    // region: <key> -> festes Bundesland
+    _resolveRegion(section) {
+      const key = String(section.region).toLowerCase();
+      if (key !== "auto") {
+        return { region: REGIONS[key] };
+      }
+      let lat, lon;
+      if (section.tracker) {
+        const st = this._hass && this._hass.states[section.tracker];
+        if (!st) return { error: `Tracker ${section.tracker} nicht gefunden.` };
+        lat = st.attributes.latitude;
+        lon = st.attributes.longitude;
+      }
+      if ((lat == null || lon == null) && this._hass && this._hass.config) {
+        // Fallback: Standort der Home-Assistant-Instanz
+        lat = this._hass.config.latitude;
+        lon = this._hass.config.longitude;
+      }
+      if (lat == null || lon == null) {
+        return { error: "Kein Standort verfügbar – HA-Standort setzen oder tracker: angeben." };
+      }
+      return { region: REGIONS[nearestRegionKey(lat, lon)] };
     }
 
     _sectionData(section) {
+      // 0. Region (Bundesland) automatisch oder fest -> auf preset/google abbilden
+      if (section.region) {
+        const resolved = this._resolveRegion(section);
+        if (resolved.error) return { title: section.title || "Meine Region", error: resolved.error };
+        const region = resolved.region;
+        const mapped = { ...section, region: undefined, tracker: undefined,
+          title: section.title || `Meine Region · ${region.name}` };
+        if (region.preset) mapped.preset = region.preset;
+        else mapped.google = region.google;
+        return this._sectionData(mapped);
+      }
+
       const preset = section.preset ? PRESETS[section.preset] : null;
       const title = section.title
         || (preset && preset.title)
@@ -166,7 +282,7 @@
       const url = section.url
         || (section.google && googleSearchUrl(section.google))
         || (preset && preset.url);
-      if (!url) return { title, error: "Keine Quelle angegeben (preset, url, entity oder google)." };
+      if (!url) return { title, error: "Keine Quelle angegeben (preset, url, entity, google oder region)." };
 
       const cached = feedCache.get(url);
       if (cached && Date.now() - cached.ts < FETCH_TTL_MS) {
@@ -272,6 +388,6 @@
   window.customCards.push({
     type: "morgenbriefing-card",
     name: "Morgenbriefing Card",
-    description: "News-Karte mit Standard-Feeds (tagesschau, Google News, Regionalsender u. a.), Google-News-Suche, eigenen RSS-URLs und vorhandenen Feed-Sensoren.",
+    description: "News-Karte mit Standard-Feeds (tagesschau, Google News, Regionalsender u. a.), automatischer Regional-Erkennung per HA-Standort/GPS, Google-News-Suche, eigenen RSS-URLs und vorhandenen Feed-Sensoren.",
   });
 })();

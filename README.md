@@ -2,13 +2,14 @@
 
 Jeden Morgen die wichtigsten nationalen und regionalen News auf dem
 Home-Assistant-Dashboard – mit **mitgelieferten Standard-Feeds** (Presets
-inkl. Google News), **Google-News-Suchfeeds** für beliebige Orte/Begriffe,
-**eigenen RSS-Links** und Unterstützung für **vorhandene Feed-Sensoren**,
-falls RSS in Home Assistant schon genutzt wird.
+inkl. Google News), **automatischer Regional-Erkennung** aus dem HA-Standort
+oder GPS, **Google-News-Suchfeeds** für beliebige Orte/Begriffe, **eigenen
+RSS-Links** und Unterstützung für **vorhandene Feed-Sensoren**, falls RSS in
+Home Assistant schon genutzt wird.
 
-## Vier Wege, eine Quelle einzubinden
+## Fünf Wege, eine Quelle einzubinden
 
-Jeder Abschnitt (`sections`) der Karte bekommt seine News auf einem von vier Wegen:
+Jeder Abschnitt (`sections`) der Karte bekommt seine News auf einem von fünf Wegen:
 
 ```yaml
 type: custom:morgenbriefing-card
@@ -16,15 +17,40 @@ title: Morgenbriefing
 max_items: 5
 sections:
   - preset: tagesschau            # 1. Standard-Feed, mitgeliefert
-  - preset: wdr                   #    …auch regional
-    title: Meine Region
-  - title: Lokales                # 2. Google-News-Suche zu Ort/Begriff
+  - region: auto                  # 2. Bundesland automatisch aus dem
+                                  #    HA-Standort – siehe unten
+  - title: Lokales                # 3. Google-News-Suche zu Ort/Begriff
     google: "Münster"             #    (ideal für Lokalnachrichten)
-  - title: Tech                   # 3. Eigener RSS/Atom-Link
+  - title: Tech                   # 4. Eigener RSS/Atom-Link
     url: https://www.heise.de/rss/heise-atom.xml
-  - title: Wirtschaft             # 4. Vorhandener Sensor (z. B. Feedparser),
+  - title: Wirtschaft             # 5. Vorhandener Sensor (z. B. Feedparser),
     entity: sensor.mein_feed      #    wenn RSS in HA schon läuft
 ```
+
+## Automatische Region (`region:`)
+
+`region: auto` bestimmt das Bundesland aus dem **Standort der
+Home-Assistant-Instanz** (Einstellungen → System → Allgemein) und wählt
+automatisch den passenden Regional-Feed – ARD-Preset, wo vorhanden, sonst
+den Google-News-Suchfeed zum Bundesland. Die Zuordnung passiert komplett
+lokal in der Karte; es werden keine Standortdaten an Dritte geschickt.
+
+```yaml
+- region: auto                # Bundesland aus dem HA-Standort
+- region: auto
+  tracker: person.rene        # …oder der GPS-Position einer Person folgen
+- region: bayern              # …oder fest setzen (überschreibt die Automatik)
+```
+
+- **GPS-Modus:** Mit `tracker:` folgt die Region der Person – im Urlaub in
+  München zeigt die Karte bayerische News. Liefert der Tracker gerade keine
+  Koordinaten, greift der HA-Standort als Fallback.
+- **Ändern jederzeit möglich:** Fester Bundesland-Key (`region: bayern`,
+  `region: nordrhein_westfalen`, `region: thueringen`, …), ein regionales
+  `preset:`, eine `google:`-Suche oder ein eigener Sensor – die Automatik
+  ist nur der Standard, nie ein Zwang.
+- Die Zuordnung arbeitet mit Städte-Stützpunkten und ist an Landesgrenzen
+  bewusst grob – wer direkt an einer Grenze wohnt, setzt die Region fest.
 
 ## Installation
 
@@ -102,6 +128,8 @@ vorhandene Sensoren per `entity:` einbinden (erwartet wird ein
 | `title` | `Morgenbriefing` | Kartentitel |
 | `max_items` | `5` | Meldungen pro Abschnitt (global oder je Abschnitt) |
 | `show_time` | `true` | Zeitstempel anzeigen |
+| `region` (je Abschnitt) | – | `auto` (HA-Standort/GPS) oder fester Bundesland-Key |
+| `tracker` (je Abschnitt) | – | Person/Device-Tracker als GPS-Quelle für `region: auto` |
 
 ## Morgen-Automation (optional)
 

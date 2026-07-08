@@ -1,13 +1,14 @@
 # Morgenbriefing-Karte (custom:morgenbriefing-card)
-# Voraussetzung: www/morgenbriefing-card.js als Dashboard-Ressource eingebunden
-# (siehe README, Schritt 1).
+# Voraussetzung: dist/morgenbriefing-card.js als Dashboard-Ressource eingebunden
+# (siehe README, Installation).
 #
-# Jeder Abschnitt in "sections" bekommt seine Quelle auf einem von drei Wegen:
+# Jeder Abschnitt in "sections" bekommt seine Quelle auf einem von fünf Wegen:
 #   preset:  mitgelieferter Standard-Feed (Liste siehe README)
+#   region:  Bundesland automatisch (auto = HA-Standort/GPS) oder fest
+#   google:  Google-News-Suchfeed zu Begriff oder Ort (Lokalnachrichten!)
 #   url:     eigener RSS/Atom-Link
 #   entity:  vorhandener Sensor mit "entries"-Attribut (z. B. Feedparser),
 #            falls du RSS in HA schon nutzt
-#   google:  Google-News-Suchfeed zu Begriff oder Ort (Lokalnachrichten!)
 
 type: custom:morgenbriefing-card
 title: Morgenbriefing
@@ -17,10 +18,19 @@ sections:
   # falls vorhanden – sonst direkter Feed-Abruf.
   - preset: tagesschau
 
-  # Regionale Presets: wdr, ndr_niedersachsen, ndr_sh, ndr_hamburg,
-  # ndr_mv, hessenschau, mdr, rbb24
-  - preset: wdr
-    title: Meine Region
+  # Region automatisch: Bundesland aus dem Standort der HA-Instanz.
+  - region: auto
+
+  # Varianten:
+  # …der GPS-Position einer Person folgen (unterwegs = News von dort):
+  # - region: auto
+  #   tracker: person.rene
+  # …oder das Bundesland fest setzen (überschreibt die Automatik):
+  # - region: bayern
+  # …oder klassisch ein regionales Preset wählen: wdr, ndr_niedersachsen,
+  #   ndr_sh, ndr_hamburg, ndr_mv, hessenschau, mdr, rbb24
+  # - preset: wdr
+  #   title: Meine Region
 
   # Google News: Topmeldungen als Preset …
   # - preset: google_news

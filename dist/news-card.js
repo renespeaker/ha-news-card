@@ -32,11 +32,20 @@
     heise:             { title: "heise online",           url: "https://www.heise.de/rss/heise-atom.xml" },
     spiegel:           { title: "SPIEGEL",                url: "https://www.spiegel.de/schlagzeilen/tops/index.rss" },
     ntv:               { title: "n-tv",                   url: "https://www.n-tv.de/rss" },
+    dlf:               { title: "Deutschlandfunk",        url: "https://www.deutschlandfunk.de/nachrichten-100.rss" },
+    dw:                { title: "Deutsche Welle",         url: "https://rss.dw.com/rdf/rss-de-all" },
+    welt:              { title: "WELT",                   url: "https://www.welt.de/feeds/latest.rss" },
     // Google News (Germany, German language)
     google_news:            { title: "Google News",            url: "https://news.google.com/rss?hl=de&gl=DE&ceid=DE:de" },
     google_news_welt:       { title: "Google News · World",    url: "https://news.google.com/rss/headlines/section/topic/WORLD?hl=de&gl=DE&ceid=DE:de" },
     google_news_wirtschaft: { title: "Google News · Business", url: "https://news.google.com/rss/headlines/section/topic/BUSINESS?hl=de&gl=DE&ceid=DE:de" },
     google_news_tech:       { title: "Google News · Tech",     url: "https://news.google.com/rss/headlines/section/topic/TECHNOLOGY?hl=de&gl=DE&ceid=DE:de" },
+    // International (Reuters has no official RSS anymore -> via Google News)
+    reuters:           { title: "Reuters",                url: "https://news.google.com/rss/search?q=Reuters&hl=de&gl=DE&ceid=DE:de" },
+    bbc:               { title: "BBC News",               url: "https://feeds.bbci.co.uk/news/world/rss.xml" },
+    guardian:          { title: "The Guardian",           url: "https://www.theguardian.com/world/rss" },
+    aljazeera:         { title: "Al Jazeera",             url: "https://www.aljazeera.com/xml/rss/all.xml" },
+    euronews:          { title: "Euronews",               url: "https://de.euronews.com/rss" },
     // Regional (ARD broadcasters)
     wdr:               { title: "WDR · NRW",                     url: "https://www1.wdr.de/uebersicht-100.feed" },
     ndr_niedersachsen: { title: "NDR · Niedersachsen",          url: "https://www.ndr.de/nachrichten/niedersachsen/index-rss.xml" },

@@ -14,6 +14,9 @@
 
 sensor:
   # ── Standard: national ────────────────────────────────────────────────
+  # Tip: some feeds (e.g. tagesschau) send CORS headers and load directly in
+  # the card without a sensor. Only add a sensor for feeds where the card
+  # shows a CORS message – it names the exact sensor id to create.
   - platform: feedparser
     name: News Tagesschau
     feed_url: "https://www.tagesschau.de/index~rss2.xml"
@@ -22,6 +25,79 @@ sensor:
     scan_interval:
       minutes: 30
     inclusions: [title, link, published]
+
+  # Deutschlandfunk (preset: dlf) -> sensor.news_dlf
+  # - platform: feedparser
+  #   name: News DLF
+  #   feed_url: "https://www.deutschlandfunk.de/nachrichten-100.rss"
+  #   date_format: "%d.%m. %H:%M"
+  #   local_time: true
+  #   scan_interval: { minutes: 30 }
+  #   inclusions: [title, link, published]
+
+  # Deutsche Welle (preset: dw) -> sensor.news_dw
+  # - platform: feedparser
+  #   name: News DW
+  #   feed_url: "https://rss.dw.com/rdf/rss-de-all"
+  #   date_format: "%d.%m. %H:%M"
+  #   local_time: true
+  #   scan_interval: { minutes: 30 }
+  #   inclusions: [title, link, published]
+
+  # WELT (preset: welt) -> sensor.news_welt
+  # - platform: feedparser
+  #   name: News WELT
+  #   feed_url: "https://www.welt.de/feeds/latest.rss"
+  #   date_format: "%d.%m. %H:%M"
+  #   local_time: true
+  #   scan_interval: { minutes: 30 }
+  #   inclusions: [title, link, published]
+
+  # ── International ─────────────────────────────────────────────────────
+  # Reuters has no official RSS anymore -> via Google News (preset: reuters)
+  # - platform: feedparser
+  #   name: News Reuters
+  #   feed_url: "https://news.google.com/rss/search?q=Reuters&hl=de&gl=DE&ceid=DE:de"
+  #   date_format: "%d.%m. %H:%M"
+  #   local_time: true
+  #   scan_interval: { minutes: 30 }
+  #   inclusions: [title, link, published]
+
+  # BBC News (preset: bbc) -> sensor.news_bbc
+  # - platform: feedparser
+  #   name: News BBC
+  #   feed_url: "https://feeds.bbci.co.uk/news/world/rss.xml"
+  #   date_format: "%d.%m. %H:%M"
+  #   local_time: true
+  #   scan_interval: { minutes: 30 }
+  #   inclusions: [title, link, published]
+
+  # The Guardian (preset: guardian) -> sensor.news_guardian
+  # - platform: feedparser
+  #   name: News Guardian
+  #   feed_url: "https://www.theguardian.com/world/rss"
+  #   date_format: "%d.%m. %H:%M"
+  #   local_time: true
+  #   scan_interval: { minutes: 30 }
+  #   inclusions: [title, link, published]
+
+  # Al Jazeera (preset: aljazeera) -> sensor.news_aljazeera
+  # - platform: feedparser
+  #   name: News Al Jazeera
+  #   feed_url: "https://www.aljazeera.com/xml/rss/all.xml"
+  #   date_format: "%d.%m. %H:%M"
+  #   local_time: true
+  #   scan_interval: { minutes: 30 }
+  #   inclusions: [title, link, published]
+
+  # Euronews (preset: euronews) -> sensor.news_euronews
+  # - platform: feedparser
+  #   name: News Euronews
+  #   feed_url: "https://de.euronews.com/rss"
+  #   date_format: "%d.%m. %H:%M"
+  #   local_time: true
+  #   scan_interval: { minutes: 30 }
+  #   inclusions: [title, link, published]
 
   # ── Regional: uncomment the block you need ───────────────────────────
   # NRW (WDR) – active as the default region; swap for another block below.

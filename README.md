@@ -96,10 +96,18 @@ URL `/local/news-card.js`, type **JavaScript module**. Clear the browser cache
 | `heise` | heise online |
 | `spiegel` | SPIEGEL headlines |
 | `ntv` | n-tv |
+| `dlf` | Deutschlandfunk |
+| `dw` | Deutsche Welle |
+| `welt` | WELT |
 | `google_news` | Google News – top headlines (Germany) |
 | `google_news_welt` | Google News – World |
 | `google_news_wirtschaft` | Google News – Business |
 | `google_news_tech` | Google News – Tech |
+| `reuters` | Reuters (via Google News – no official RSS) |
+| `bbc` | BBC News (World) |
+| `guardian` | The Guardian (World) |
+| `aljazeera` | Al Jazeera |
+| `euronews` | Euronews (German) |
 | `wdr` | NRW (WDR) |
 | `ndr_niedersachsen` / `ndr_sh` / `ndr_hamburg` / `ndr_mv` | NDR regional feeds |
 | `hessenschau` | Hessen |

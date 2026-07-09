@@ -1,168 +1,166 @@
-# 📰 HA News Card (Morgenbriefing)
+# 📰 News Card
 
-Jeden Morgen die wichtigsten nationalen und regionalen News auf dem
-Home-Assistant-Dashboard – mit **mitgelieferten Standard-Feeds** (Presets
-inkl. Google News), **automatischer Regional-Erkennung** aus dem HA-Standort
-oder GPS, **Google-News-Suchfeeds** für beliebige Orte/Begriffe, **eigenen
-RSS-Links** und Unterstützung für **vorhandene Feed-Sensoren**, falls RSS in
-Home Assistant schon genutzt wird.
+A news card for your Home Assistant dashboard. It shows the top national and
+regional headlines every morning – with **built-in feeds** (presets incl.
+Google News), **automatic region detection** from the HA location or GPS,
+**Google News search feeds** for any place or topic, **custom RSS links**, and
+support for **existing feed sensors** if you already use RSS in Home Assistant.
 
-## Einrichten ohne YAML: der visuelle Editor
+The interface is available in **English and German** and follows your Home
+Assistant language automatically (override with the `language` option).
 
-Die Karte bringt ein **grafisches Einstellungsmenü** mit – YAML ist optional.
-Dashboard → Bearbeiten → Karte hinzufügen → „Morgenbriefing Card", oder bei
-einer bestehenden Karte auf das **Zahnrad** klicken. Dort lässt sich alles per
-Klick und Eingabefeld einstellen:
+## Configure without YAML: the visual editor
 
-- **Kartentitel**, **Meldungen pro Abschnitt** und **Zeitstempel** (an/aus)
-- **Abschnitte** hinzufügen, entfernen und per ↑/↓ umsortieren
-- pro Abschnitt die **Quelle** aus einer Liste wählen: Standard-Feed (Preset),
-  Region (automatisch/fest), Google-News-Suche, eigener RSS-Link oder ein
-  vorhandener Sensor – die passenden Felder erscheinen automatisch
-- Sensor- und Tracker-Felder schlagen passende Entitäten aus deiner Instanz vor
+The card ships a **graphical settings menu** – YAML is optional.
+Dashboard → Edit → Add card → "News Card", or click the **gear** on an existing
+card. Everything can be set with clicks and input fields:
 
-Die folgende YAML-Referenz brauchst du nur, wenn du lieber im Code
-konfigurierst oder Feinheiten nachschlagen willst.
+- **Language** (Automatic / English / Deutsch), **card title**, **headlines per
+  section**, and **timestamps** on/off
+- add, remove and reorder **sections** with ↑/↓
+- pick each section's **source** from a list: standard feed (preset), region
+  (auto/fixed), Google News search, custom RSS link, or an existing sensor –
+  the matching fields appear automatically
+- sensor and tracker fields suggest matching entities from your instance
 
-## Fünf Wege, eine Quelle einzubinden
+The YAML reference below is only needed if you prefer configuring in code.
 
-Jeder Abschnitt (`sections`) der Karte bekommt seine News auf einem von fünf
-Wegen – im Editor als Auswahlliste, in YAML als Schlüssel:
+## Five ways to define a source
+
+Each entry in `sections` gets its news one of five ways – a dropdown in the
+editor, a key in YAML:
 
 ```yaml
-type: custom:morgenbriefing-card
-title: Morgenbriefing
+type: custom:news-card
+title: News Card
 max_items: 5
 sections:
-  - preset: tagesschau            # 1. Standard-Feed, mitgeliefert
-  - region: auto                  # 2. Bundesland automatisch aus dem
-                                  #    HA-Standort – siehe unten
-  - title: Lokales                # 3. Google-News-Suche zu Ort/Begriff
-    google: "Münster"             #    (ideal für Lokalnachrichten)
-  - title: Tech                   # 4. Eigener RSS/Atom-Link
+  - preset: tagesschau            # 1. built-in standard feed
+  - region: auto                  # 2. federal state from the HA location
+                                  #    (see below)
+  - title: Local                  # 3. Google News search for a place/term
+    google: "Münster"             #    (great for local news)
+  - title: Tech                   # 4. custom RSS/Atom link
     url: https://www.heise.de/rss/heise-atom.xml
-  - title: Wirtschaft             # 5. Vorhandener Sensor (z. B. Feedparser),
-    entity: sensor.mein_feed      #    wenn RSS in HA schon läuft
+  - title: Business               # 5. existing sensor (e.g. Feedparser),
+    entity: sensor.my_feed        #    if you already use RSS in HA
 ```
 
-## Automatische Region (`region:`)
+## Automatic region (`region:`)
 
-`region: auto` bestimmt das Bundesland aus dem **Standort der
-Home-Assistant-Instanz** (Einstellungen → System → Allgemein) und wählt
-automatisch den passenden Regional-Feed – ARD-Preset, wo vorhanden, sonst
-den Google-News-Suchfeed zum Bundesland. Die Zuordnung passiert komplett
-lokal in der Karte; es werden keine Standortdaten an Dritte geschickt.
+`region: auto` determines the federal state from the **Home Assistant location**
+(Settings → System → General) and picks the matching regional feed – an ARD
+preset where available, otherwise the Google News search feed for that state.
+Matching happens entirely locally in the card; no location data is sent to
+third parties.
 
 ```yaml
-- region: auto                # Bundesland aus dem HA-Standort
+- region: auto                # federal state from the HA location
 - region: auto
-  tracker: person.rene        # …oder der GPS-Position einer Person folgen
-- region: bayern              # …oder fest setzen (überschreibt die Automatik)
+  tracker: person.rene        # …or follow a person's GPS position
+- region: bayern              # …or set it fixed (overrides the automatic one)
 ```
 
-- **GPS-Modus:** Mit `tracker:` folgt die Region der Person – im Urlaub in
-  München zeigt die Karte bayerische News. Liefert der Tracker gerade keine
-  Koordinaten, greift der HA-Standort als Fallback.
-- **Ändern jederzeit möglich:** Fester Bundesland-Key (`region: bayern`,
-  `region: nordrhein_westfalen`, `region: thueringen`, …), ein regionales
-  `preset:`, eine `google:`-Suche oder ein eigener Sensor – die Automatik
-  ist nur der Standard, nie ein Zwang.
-- Die Zuordnung arbeitet mit Städte-Stützpunkten und ist an Landesgrenzen
-  bewusst grob – wer direkt an einer Grenze wohnt, setzt die Region fest.
+- **GPS mode:** with `tracker:` the region follows the person – on holiday in
+  Munich the card shows Bavarian news. If the tracker has no coordinates right
+  now, the HA location is used as a fallback.
+- **Change it any time:** a fixed state key (`region: bayern`,
+  `region: nordrhein_westfalen`, `region: thueringen`, …), a regional
+  `preset:`, a `google:` search, or your own sensor – the automatic pick is
+  only the default, never a lock-in.
+- Matching uses city support points and is deliberately coarse near borders –
+  if you live right on a state border, set the region explicitly.
 
 ## Installation
 
-### Über HACS (empfohlen)
+### Via HACS (recommended)
 
-1. HACS → ⋮ → **Benutzerdefinierte Repositories**
-2. Repository `https://github.com/renespeaker/ha-news-card`, Typ **Dashboard**
-3. „HA News Card (Morgenbriefing)" installieren – HACS registriert die
-   Ressource automatisch.
+1. HACS → ⋮ → **Custom repositories**
+2. Repository `https://github.com/renespeaker/ha-news-card`, type **Dashboard**
+3. Install "News Card" – HACS registers the resource automatically.
 
-### Manuell
+### Manual
 
-`dist/morgenbriefing-card.js` nach `/config/www/` kopieren, dann:
-Einstellungen → Dashboards → ⋮ → **Ressourcen** → Hinzufügen →
-URL `/local/morgenbriefing-card.js`, Typ **JavaScript-Modul**. Browser-Cache
-leeren (Strg+F5).
+Copy `dist/news-card.js` to `/config/www/`, then:
+Settings → Dashboards → ⋮ → **Resources** → Add →
+URL `/local/news-card.js`, type **JavaScript module**. Clear the browser cache
+(Ctrl+F5).
 
-## Presets (mitgelieferte Standard-Feeds)
+## Presets (built-in standard feeds)
 
 | Preset | Feed |
 |---|---|
-| `tagesschau` | tagesschau.de – Topmeldungen |
-| `tagesschau_inland` | tagesschau.de – Inland |
+| `tagesschau` | tagesschau.de – top headlines |
+| `tagesschau_inland` | tagesschau.de – national |
 | `sportschau` | sportschau.de |
 | `heise` | heise online |
-| `spiegel` | SPIEGEL Schlagzeilen |
+| `spiegel` | SPIEGEL headlines |
 | `ntv` | n-tv |
-| `google_news` | Google News – Topmeldungen Deutschland |
-| `google_news_welt` | Google News – Welt |
-| `google_news_wirtschaft` | Google News – Wirtschaft |
-| `google_news_tech` | Google News – Technik |
+| `google_news` | Google News – top headlines (Germany) |
+| `google_news_welt` | Google News – World |
+| `google_news_wirtschaft` | Google News – Business |
+| `google_news_tech` | Google News – Tech |
 | `wdr` | NRW (WDR) |
-| `ndr_niedersachsen` / `ndr_sh` / `ndr_hamburg` / `ndr_mv` | NDR-Regionalfeeds |
+| `ndr_niedersachsen` / `ndr_sh` / `ndr_hamburg` / `ndr_mv` | NDR regional feeds |
 | `hessenschau` | Hessen |
 | `mdr` | Sachsen / Sachsen-Anhalt / Thüringen |
 | `rbb24` | Berlin / Brandenburg |
 
-**Google News:** Neben den Presets baut `google: "Begriff"` automatisch einen
-Google-News-Suchfeed (deutschsprachig, Region DE) – praktisch für
-Lokalnachrichten zum eigenen Ort oder Themen wie einen Vereinsnamen.
-Google-News-Links führen über news.google.com zum Artikel, Titel enthalten
-den Quellennamen.
+**Google News:** besides the presets, `google: "term"` builds a Google News
+search feed automatically – handy for local news about your town or topics such
+as a club name. Google News links go through news.google.com to the article,
+and titles include the source name.
 
-**Wie die Karte eine Preset-Quelle auflöst:** Existiert der Sensor
-`sensor.mb_<preset>` (aus dem Beispiel-Package), wird er benutzt –
-zuverlässigster Weg, weil Home Assistant den Feed serverseitig lädt. Sonst
-versucht die Karte den direkten Abruf im Browser (15-Minuten-Cache).
-Blockiert die News-Seite das per CORS, zeigt die Karte einen Hinweis, für
-diesen Feed einen Sensor anzulegen. Gleiches gilt für `url:`- und
-`google:`-Einträge.
+**How the card resolves a preset source:** if the sensor `sensor.news_<preset>`
+exists (from the example package), it is used – the most reliable path, because
+Home Assistant loads the feed server-side. Otherwise the card fetches directly
+in the browser (15-minute cache). If the news site blocks that via CORS, the
+card shows a hint to create a sensor for that feed. The same applies to `url:`
+and `google:` entries.
 
-## Standard-Sensoren anlegen (empfohlen)
+## Create the standard sensors (recommended)
 
-Damit alle Feeds zuverlässig serverseitig geladen werden:
+So that all feeds load reliably server-side:
 
-1. HACS-Integration **feedparser** installieren (`custom-components/feedparser`),
-   Home Assistant neu starten.
-2. [`examples/packages/morgenbriefing.yaml`](examples/packages/morgenbriefing.yaml)
-   nach `/config/packages/` kopieren und Packages aktivieren:
+1. Install the HACS integration **feedparser** (`custom-components/feedparser`)
+   and restart Home Assistant.
+2. Copy [`examples/packages/news-card.yaml`](examples/packages/news-card.yaml)
+   to `/config/packages/` and enable packages:
    ```yaml
    homeassistant:
      packages: !include_dir_named packages
    ```
-3. Im Package den passenden Regional-Block einkommentieren, eigene Feeds
-   ergänzen, Home Assistant neu starten.
+3. Uncomment the regional block you need, add your own feeds, restart HA.
 
-**Schon Feedparser/RSS-Sensoren im Einsatz?** Dann entfällt dieser Schritt –
-vorhandene Sensoren per `entity:` einbinden (erwartet wird ein
-`entries`-Attribut mit `title`, `link`, `published`).
+**Already using Feedparser/RSS sensors?** Then skip this step – bind existing
+sensors via `entity:` (an `entries` attribute with `title`, `link`, `published`
+is expected).
 
-## Karten-Optionen
+## Card options
 
-| Option | Standard | Beschreibung |
+| Option | Default | Description |
 |---|---|---|
-| `title` | `Morgenbriefing` | Kartentitel |
-| `max_items` | `5` | Meldungen pro Abschnitt (global oder je Abschnitt) |
-| `show_time` | `true` | Zeitstempel anzeigen |
-| `region` (je Abschnitt) | – | `auto` (HA-Standort/GPS) oder fester Bundesland-Key |
-| `tracker` (je Abschnitt) | – | Person/Device-Tracker als GPS-Quelle für `region: auto` |
+| `language` | HA language | `en` or `de` (forces the UI language) |
+| `title` | `News Card` | card title |
+| `max_items` | `5` | headlines per section (global or per section) |
+| `show_time` | `true` | show timestamps |
+| `region` (per section) | – | `auto` (HA location/GPS) or a fixed state key |
+| `tracker` (per section) | – | person/device tracker as the GPS source for `region: auto` |
 
-## Morgen-Automation (optional)
+## Morning automation (optional)
 
-[`examples/automation.yaml`](examples/automation.yaml) aktualisiert um
-06:00 Uhr die Sensoren und schickt die Top-3-Schlagzeilen als Push aufs
-Handy (`notify.mobile_app_…` anpassen).
+[`examples/automation.yaml`](examples/automation.yaml) refreshes the sensors at
+06:00 and pushes the top 3 headlines to your phone (adjust
+`notify.mobile_app_…`).
 
-## Weitere Beispiele
+## More examples
 
-- [`examples/dashboard-card.yaml`](examples/dashboard-card.yaml) – Karten-Konfiguration
-- [`examples/dashboard-card-markdown.yaml`](examples/dashboard-card-markdown.yaml) – Fallback ohne Custom Card
+- [`examples/dashboard-card.yaml`](examples/dashboard-card.yaml) – card configuration
+- [`examples/dashboard-card-markdown.yaml`](examples/dashboard-card-markdown.yaml) – fallback without the custom card
 
-## Hinweise
+## Notes
 
-- **Feed-URLs prüfen:** Jede URL einmal im Browser öffnen – es muss XML/RSS
-  erscheinen. Sender ändern URLs gelegentlich.
-- **Fair bleiben:** `scan_interval` von 30 Minuten reicht – die
-  Morgen-Automation lädt um 6 Uhr ohnehin frisch.
+- **Check feed URLs:** open each URL once in the browser – XML/RSS must appear.
+  Broadcasters change URLs occasionally.
+- **Be fair:** a `scan_interval` of 30 minutes is plenty – the morning
+  automation loads fresh at 6 a.m. anyway.

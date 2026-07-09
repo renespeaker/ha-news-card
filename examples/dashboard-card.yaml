@@ -1,48 +1,50 @@
-# Morgenbriefing-Karte (custom:morgenbriefing-card)
-# Voraussetzung: dist/morgenbriefing-card.js als Dashboard-Ressource eingebunden
-# (siehe README, Installation).
+# News Card (custom:news-card)
+# Tip: the card ships a visual editor – you can configure everything via the
+# gear icon without touching YAML. This file is the equivalent in code.
+# Requires dist/news-card.js added as a dashboard resource (see README).
 #
-# Jeder Abschnitt in "sections" bekommt seine Quelle auf einem von fünf Wegen:
-#   preset:  mitgelieferter Standard-Feed (Liste siehe README)
-#   region:  Bundesland automatisch (auto = HA-Standort/GPS) oder fest
-#   google:  Google-News-Suchfeed zu Begriff oder Ort (Lokalnachrichten!)
-#   url:     eigener RSS/Atom-Link
-#   entity:  vorhandener Sensor mit "entries"-Attribut (z. B. Feedparser),
-#            falls du RSS in HA schon nutzt
+# Each entry in "sections" gets its source one of five ways:
+#   preset:  built-in standard feed (see README for the list)
+#   region:  federal state, automatic (auto = HA location/GPS) or fixed
+#   google:  Google News search feed for a term or place (local news!)
+#   url:     custom RSS/Atom link
+#   entity:  existing sensor with an "entries" attribute (e.g. Feedparser)
+#
+# language: en | de  (optional – defaults to the Home Assistant language)
 
-type: custom:morgenbriefing-card
-title: Morgenbriefing
+type: custom:news-card
+title: News Card
 max_items: 5
 sections:
-  # Standard-Feed (Preset). Nutzt automatisch sensor.mb_tagesschau,
-  # falls vorhanden – sonst direkter Feed-Abruf.
+  # Standard feed (preset). Uses sensor.news_tagesschau automatically if it
+  # exists – otherwise fetches the feed directly.
   - preset: tagesschau
 
-  # Region automatisch: Bundesland aus dem Standort der HA-Instanz.
+  # Automatic region: federal state from the Home Assistant location.
   - region: auto
 
-  # Varianten:
-  # …der GPS-Position einer Person folgen (unterwegs = News von dort):
+  # Variants:
+  # …follow a person's GPS position (away = news from there):
   # - region: auto
   #   tracker: person.rene
-  # …oder das Bundesland fest setzen (überschreibt die Automatik):
+  # …or set the state explicitly (overrides the automatic detection):
   # - region: bayern
-  # …oder klassisch ein regionales Preset wählen: wdr, ndr_niedersachsen,
+  # …or pick a regional preset directly: wdr, ndr_niedersachsen,
   #   ndr_sh, ndr_hamburg, ndr_mv, hessenschau, mdr, rbb24
   # - preset: wdr
-  #   title: Meine Region
+  #   title: My region
 
-  # Google News: Topmeldungen als Preset …
+  # Google News: top headlines as a preset …
   # - preset: google_news
-  # … oder Suchfeed zu Ort/Begriff (ideal für Lokalnachrichten):
-  # - title: Lokales
+  # … or a search feed for a place/term (great for local news):
+  # - title: Local
   #   google: "Münster"
 
-  # Eigener RSS-Link (Titel frei wählbar):
+  # Custom RSS link (title is free):
   # - title: Tech
   #   url: https://www.heise.de/rss/heise-atom.xml
 
-  # Vorhandener Sensor, falls du RSS in HA bereits nutzt:
-  # - title: Lokales
-  #   entity: sensor.mein_vorhandener_feed
+  # Existing sensor, if you already use RSS in HA:
+  # - title: Local
+  #   entity: sensor.my_existing_feed
   #   max_items: 3

@@ -1,6 +1,6 @@
 {
-  "name": "HA News Card (Morgenbriefing)",
-  "filename": "morgenbriefing-card.js",
+  "name": "News Card",
+  "filename": "news-card.js",
   "content_in_root": false,
   "render_readme": true
 }

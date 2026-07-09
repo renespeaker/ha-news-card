@@ -1,13 +1,13 @@
-# Automation: News-Sensoren morgens aktualisieren + Top-3 als Push aufs Handy
-# - entity_id-Liste an die eigenen MB-Sensoren anpassen (sensor.mb_…)
-# - notify.mobile_app_dein_handy an den eigenen Gerätenamen anpassen
-#   (Entwicklerwerkzeuge → Aktionen → nach "notify.mobile_app" suchen).
+# Automation: refresh news sensors in the morning + push top 3 to your phone
+# - adjust the entity_id list to your own News sensors (sensor.news_…)
+# - adjust notify.mobile_app_your_phone to your device name
+#   (Developer tools → Actions → search for "notify.mobile_app").
 
 automation:
-  - alias: "Morgenbriefing: News aktualisieren und pushen"
+  - alias: "News Card: refresh news and push"
     description: >-
-      Aktualisiert um 06:00 Uhr die News-Feeds und schickt die
-      Top-3-Schlagzeilen als Benachrichtigung.
+      Refreshes the news feeds at 06:00 and sends the top 3 headlines
+      as a notification.
     triggers:
       - trigger: time
         at: "06:00:00"
@@ -16,14 +16,14 @@ automation:
       - action: homeassistant.update_entity
         target:
           entity_id:
-            - sensor.mb_tagesschau
-            # - sensor.mb_wdr        # eigenen Regional-Sensor ergänzen
+            - sensor.news_tagesschau
+            # - sensor.news_wdr        # add your own regional sensor
       - delay:
           seconds: 15
-      - action: notify.mobile_app_dein_handy
+      - action: notify.mobile_app_your_phone
         data:
-          title: "📰 Morgenbriefing"
+          title: "📰 News Card"
           message: >-
-            {{ (state_attr('sensor.mb_tagesschau', 'entries') or [])[:3]
+            {{ (state_attr('sensor.news_tagesschau', 'entries') or [])[:3]
                | map(attribute='title') | join('  •  ') }}
     mode: single

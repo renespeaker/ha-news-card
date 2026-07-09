@@ -1,21 +1,21 @@
-# Package "Morgenbriefing" – Standard-News-Sensoren
+# Package "News Card" – standard news sensors
 #
-# Einbinden in configuration.yaml:
+# Include in configuration.yaml:
 #   homeassistant:
 #     packages: !include_dir_named packages
-# …und diese Datei nach /config/packages/morgenbriefing.yaml kopieren.
+# …and copy this file to /config/packages/news-card.yaml.
 #
-# Voraussetzung: HACS-Integration "feedparser" (custom-components/feedparser).
+# Requires the HACS integration "feedparser" (custom-components/feedparser).
 #
-# Namenskonvention: Sensoren heißen "MB <Name>" -> entity_id sensor.mb_<name>.
-# Die Morgenbriefing-Karte findet Preset-Sensoren darüber automatisch
-# (preset: tagesschau -> sensor.mb_tagesschau). Nicht benötigte Sensoren
-# einfach auskommentiert lassen.
+# Naming: sensors are called "News <Name>" -> entity_id sensor.news_<name>.
+# The News Card finds preset sensors via this convention automatically
+# (preset: tagesschau -> sensor.news_tagesschau). Leave sensors you don't
+# need commented out.
 
 sensor:
   # ── Standard: national ────────────────────────────────────────────────
   - platform: feedparser
-    name: MB Tagesschau
+    name: News Tagesschau
     feed_url: "https://www.tagesschau.de/index~rss2.xml"
     date_format: "%d.%m. %H:%M"
     local_time: true
@@ -26,7 +26,7 @@ sensor:
   # ── Regional: passenden Block einkommentieren ────────────────────────
   # NRW (WDR)
   # - platform: feedparser
-  #   name: MB WDR
+  #   name: News WDR
   #   feed_url: "https://www1.wdr.de/uebersicht-100.feed"
   #   date_format: "%d.%m. %H:%M"
   #   local_time: true
@@ -35,7 +35,7 @@ sensor:
 
   # Niedersachsen (NDR)
   # - platform: feedparser
-  #   name: MB NDR Niedersachsen
+  #   name: News NDR Niedersachsen
   #   feed_url: "https://www.ndr.de/nachrichten/niedersachsen/index-rss.xml"
   #   date_format: "%d.%m. %H:%M"
   #   local_time: true
@@ -44,7 +44,7 @@ sensor:
 
   # Schleswig-Holstein (NDR)
   # - platform: feedparser
-  #   name: MB NDR SH
+  #   name: News NDR SH
   #   feed_url: "https://www.ndr.de/nachrichten/schleswig-holstein/index-rss.xml"
   #   date_format: "%d.%m. %H:%M"
   #   local_time: true
@@ -53,7 +53,7 @@ sensor:
 
   # Hamburg (NDR)
   # - platform: feedparser
-  #   name: MB NDR Hamburg
+  #   name: News NDR Hamburg
   #   feed_url: "https://www.ndr.de/nachrichten/hamburg/index-rss.xml"
   #   date_format: "%d.%m. %H:%M"
   #   local_time: true
@@ -62,7 +62,7 @@ sensor:
 
   # Mecklenburg-Vorpommern (NDR)
   # - platform: feedparser
-  #   name: MB NDR MV
+  #   name: News NDR MV
   #   feed_url: "https://www.ndr.de/nachrichten/mecklenburg-vorpommern/index-rss.xml"
   #   date_format: "%d.%m. %H:%M"
   #   local_time: true
@@ -71,7 +71,7 @@ sensor:
 
   # Hessen (hessenschau)
   # - platform: feedparser
-  #   name: MB Hessenschau
+  #   name: News Hessenschau
   #   feed_url: "https://www.hessenschau.de/index.rss"
   #   date_format: "%d.%m. %H:%M"
   #   local_time: true
@@ -80,7 +80,7 @@ sensor:
 
   # Sachsen / Sachsen-Anhalt / Thüringen (MDR)
   # - platform: feedparser
-  #   name: MB MDR
+  #   name: News MDR
   #   feed_url: "https://www.mdr.de/nachrichten/index-rss.xml"
   #   date_format: "%d.%m. %H:%M"
   #   local_time: true
@@ -89,7 +89,7 @@ sensor:
 
   # Berlin / Brandenburg (rbb24)
   # - platform: feedparser
-  #   name: MB Rbb24
+  #   name: News Rbb24
   #   feed_url: "https://www.rbb24.de/aktuell/index.xml/feed=rss.xml"
   #   date_format: "%d.%m. %H:%M"
   #   local_time: true
@@ -99,7 +99,7 @@ sensor:
   # ── Google News ───────────────────────────────────────────────────────
   # Topmeldungen Deutschland (Preset: google_news)
   # - platform: feedparser
-  #   name: MB Google News
+  #   name: News Google News
   #   feed_url: "https://news.google.com/rss?hl=de&gl=DE&ceid=DE:de"
   #   date_format: "%d.%m. %H:%M"
   #   local_time: true
@@ -109,7 +109,7 @@ sensor:
   # Lokal-Suche: Ort oder Begriff hinter q= eintragen (URL-kodiert).
   # Alternativ direkt in der Karte: google: "Mein Ort"
   # - platform: feedparser
-  #   name: MB Google Lokal
+  #   name: News Google Lokal
   #   feed_url: "https://news.google.com/rss/search?q=Meine%20Stadt&hl=de&gl=DE&ceid=DE:de"
   #   date_format: "%d.%m. %H:%M"
   #   local_time: true

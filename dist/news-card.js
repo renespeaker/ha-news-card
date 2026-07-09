@@ -1,60 +1,60 @@
 /**
- * Morgenbriefing Card – News-Karte für Home Assistant
+ * News Card – news card for Home Assistant
  *
- * Fünf Wege, eine Quelle einzubinden (pro Abschnitt in `sections`):
- *   1. preset: tagesschau        – mitgelieferter Standard-Feed (auch Google News)
- *   2. url: https://…/feed.xml   – eigener RSS/Atom-Link (direkter Abruf im Browser)
- *   3. entity: sensor.mein_feed  – vorhandener Sensor (z. B. Feedparser) mit
- *                                  einem `entries`-Attribut
- *   4. google: "Suchbegriff"     – Google-News-Suchfeed, z. B. der eigene Ort
- *                                  für Lokalnachrichten (google: "Münster")
- *   5. region: auto              – Bundesland automatisch aus dem HA-Standort
- *                                  bestimmen und den passenden Regional-Feed
- *                                  wählen. Mit tracker: person.xyz folgt die
- *                                  Region der GPS-Position dieser Person.
- *                                  Fest überschreibbar: region: bayern usw.
+ * Five ways to define a source (per entry in `sections`):
+ *   1. preset: tagesschau        – built-in standard feed (incl. Google News)
+ *   2. url: https://…/feed.xml   – custom RSS/Atom link (fetched in the browser)
+ *   3. entity: sensor.my_feed    – existing sensor (e.g. Feedparser) that has
+ *                                  an `entries` attribute
+ *   4. google: "search term"     – Google News search feed, e.g. your town for
+ *                                  local news (google: "Münster")
+ *   5. region: auto              – detect the federal state from the Home
+ *                                  Assistant location and pick the matching
+ *                                  regional feed. With tracker: person.xyz the
+ *                                  region follows that person's GPS position.
+ *                                  Override with a fixed key: region: bayern
  *
- * Bei Presets gilt die Reihenfolge: existiert der Sensor `sensor.mb_<preset>`
- * (aus examples/packages/morgenbriefing.yaml), wird er benutzt – sonst versucht die
- * Karte den direkten Abruf der Feed-URL. Schlägt der am CORS-Schutz der
- * News-Seite fehl, zeigt die Karte einen Hinweis auf den Sensor-Weg.
+ * UI language follows Home Assistant (German / English); force it with the
+ * card option `language: en` or `language: de`.
  *
- * Beispiel-Konfiguration: siehe examples/dashboard-card.yaml.
+ * Config without YAML: the card ships a visual editor (gear icon).
  */
 (function () {
   "use strict";
 
+  const CARD_NAME = "News Card";
+
   const PRESETS = {
-    // National / überregional
-    tagesschau:        { title: "Deutschland · Tagesschau",  url: "https://www.tagesschau.de/index~rss2.xml" },
-    tagesschau_inland: { title: "Inland · Tagesschau",       url: "https://www.tagesschau.de/inland/index~rss2.xml" },
-    sportschau:        { title: "Sport · Sportschau",        url: "https://www.sportschau.de/index~rss2.xml" },
-    heise:             { title: "Tech · heise online",       url: "https://www.heise.de/rss/heise-atom.xml" },
-    spiegel:           { title: "SPIEGEL Schlagzeilen",      url: "https://www.spiegel.de/schlagzeilen/tops/index.rss" },
-    ntv:               { title: "n-tv",                      url: "https://www.n-tv.de/rss" },
-    // Google News (Deutschland, deutschsprachig)
-    google_news:            { title: "Google News · Topmeldungen", url: "https://news.google.com/rss?hl=de&gl=DE&ceid=DE:de" },
-    google_news_welt:       { title: "Google News · Welt",         url: "https://news.google.com/rss/headlines/section/topic/WORLD?hl=de&gl=DE&ceid=DE:de" },
-    google_news_wirtschaft: { title: "Google News · Wirtschaft",   url: "https://news.google.com/rss/headlines/section/topic/BUSINESS?hl=de&gl=DE&ceid=DE:de" },
-    google_news_tech:       { title: "Google News · Technik",      url: "https://news.google.com/rss/headlines/section/topic/TECHNOLOGY?hl=de&gl=DE&ceid=DE:de" },
-    // Regional (ARD-Anstalten)
-    wdr:               { title: "NRW · WDR",                        url: "https://www1.wdr.de/uebersicht-100.feed" },
-    ndr_niedersachsen: { title: "Niedersachsen · NDR",              url: "https://www.ndr.de/nachrichten/niedersachsen/index-rss.xml" },
-    ndr_sh:            { title: "Schleswig-Holstein · NDR",         url: "https://www.ndr.de/nachrichten/schleswig-holstein/index-rss.xml" },
-    ndr_hamburg:       { title: "Hamburg · NDR",                    url: "https://www.ndr.de/nachrichten/hamburg/index-rss.xml" },
-    ndr_mv:            { title: "Mecklenburg-Vorpommern · NDR",     url: "https://www.ndr.de/nachrichten/mecklenburg-vorpommern/index-rss.xml" },
-    hessenschau:       { title: "Hessen · hessenschau",             url: "https://www.hessenschau.de/index.rss" },
-    mdr:               { title: "Mitteldeutschland · MDR",          url: "https://www.mdr.de/nachrichten/index-rss.xml" },
-    rbb24:             { title: "Berlin/Brandenburg · rbb24",       url: "https://www.rbb24.de/aktuell/index.xml/feed=rss.xml" },
+    // National / nationwide
+    tagesschau:        { title: "Tagesschau",             url: "https://www.tagesschau.de/index~rss2.xml" },
+    tagesschau_inland: { title: "Tagesschau · National",  url: "https://www.tagesschau.de/inland/index~rss2.xml" },
+    sportschau:        { title: "Sportschau",             url: "https://www.sportschau.de/index~rss2.xml" },
+    heise:             { title: "heise online",           url: "https://www.heise.de/rss/heise-atom.xml" },
+    spiegel:           { title: "SPIEGEL",                url: "https://www.spiegel.de/schlagzeilen/tops/index.rss" },
+    ntv:               { title: "n-tv",                   url: "https://www.n-tv.de/rss" },
+    // Google News (Germany, German language)
+    google_news:            { title: "Google News",            url: "https://news.google.com/rss?hl=de&gl=DE&ceid=DE:de" },
+    google_news_welt:       { title: "Google News · World",    url: "https://news.google.com/rss/headlines/section/topic/WORLD?hl=de&gl=DE&ceid=DE:de" },
+    google_news_wirtschaft: { title: "Google News · Business", url: "https://news.google.com/rss/headlines/section/topic/BUSINESS?hl=de&gl=DE&ceid=DE:de" },
+    google_news_tech:       { title: "Google News · Tech",     url: "https://news.google.com/rss/headlines/section/topic/TECHNOLOGY?hl=de&gl=DE&ceid=DE:de" },
+    // Regional (ARD broadcasters)
+    wdr:               { title: "WDR · NRW",                     url: "https://www1.wdr.de/uebersicht-100.feed" },
+    ndr_niedersachsen: { title: "NDR · Niedersachsen",          url: "https://www.ndr.de/nachrichten/niedersachsen/index-rss.xml" },
+    ndr_sh:            { title: "NDR · Schleswig-Holstein",     url: "https://www.ndr.de/nachrichten/schleswig-holstein/index-rss.xml" },
+    ndr_hamburg:       { title: "NDR · Hamburg",                url: "https://www.ndr.de/nachrichten/hamburg/index-rss.xml" },
+    ndr_mv:            { title: "NDR · Mecklenburg-Vorpommern", url: "https://www.ndr.de/nachrichten/mecklenburg-vorpommern/index-rss.xml" },
+    hessenschau:       { title: "hessenschau · Hessen",         url: "https://www.hessenschau.de/index.rss" },
+    mdr:               { title: "MDR · Mitteldeutschland",      url: "https://www.mdr.de/nachrichten/index-rss.xml" },
+    rbb24:             { title: "rbb24 · Berlin/Brandenburg",   url: "https://www.rbb24.de/aktuell/index.xml/feed=rss.xml" },
   };
 
-  // google: "Suchbegriff" -> Google-News-Suchfeed (Deutschland, deutschsprachig)
+  // google: "term" -> Google News search feed (Germany, German language)
   function googleSearchUrl(term) {
     return `https://news.google.com/rss/search?q=${encodeURIComponent(term)}&hl=de&gl=DE&ceid=DE:de`;
   }
 
-  // region: -> Bundesland-Feed. Hat ein Land keinen stabilen ARD-Feed als
-  // Preset, dient der Google-News-Suchfeed zum Bundesland als Quelle.
+  // region: -> federal-state feed. Where a state has no stable ARD feed as a
+  // preset, the Google News search feed for that state is used instead.
   const REGIONS = {
     schleswig_holstein:     { name: "Schleswig-Holstein",     preset: "ndr_sh" },
     hamburg:                { name: "Hamburg",                preset: "ndr_hamburg" },
@@ -74,9 +74,9 @@
     bayern:                 { name: "Bayern",                 google: "Bayern" },
   };
 
-  // Stützpunkte (Städte/Landesteile) für die Nächster-Punkt-Zuordnung von
-  // Koordinaten zu Bundesländern. Grob, aber für die Feed-Wahl ausreichend –
-  // an Landesgrenzen im Zweifel region: <key> fest setzen.
+  // Support points (cities / parts of a state) for nearest-point matching of
+  // coordinates to federal states. Coarse but good enough for feed selection;
+  // near a state border, set region: <key> explicitly.
   const REGION_POINTS = [
     [54.32, 10.13, "schleswig_holstein"], [53.87, 10.69, "schleswig_holstein"], [54.78, 9.44, "schleswig_holstein"],
     [53.55, 9.99, "hamburg"],
@@ -109,36 +109,139 @@
     let bestDist = Infinity;
     for (const [pLat, pLon, key] of REGION_POINTS) {
       const dLat = lat - pLat;
-      const dLon = (lon - pLon) * 0.63; // Längengrad-Stauchung auf Höhe Deutschlands
+      const dLon = (lon - pLon) * 0.63; // longitude squeeze at Germany's latitude
       const dist = dLat * dLat + dLon * dLon;
       if (dist < bestDist) { bestDist = dist; best = key; }
     }
     return best;
   }
 
-  // Mögliche Quellen-Schlüssel eines Abschnitts, in Anzeige-Reihenfolge.
-  // Vom grafischen Editor und der Konfig-Prüfung gemeinsam genutzt.
-  const SOURCE_TYPES = [
-    ["preset", "Standard-Feed (Preset)"],
-    ["region", "Region (automatisch/fest)"],
-    ["google", "Google-News-Suche"],
-    ["url", "Eigener RSS/Atom-Link"],
-    ["entity", "Vorhandener Sensor"],
-  ];
-  const SOURCE_KEYS = SOURCE_TYPES.map(([k]) => k);
+  // Possible source keys of a section, in display order.
+  const SOURCE_KEYS = ["preset", "region", "google", "url", "entity"];
 
   function sectionSourceType(section) {
     for (const k of SOURCE_KEYS) if (k in section) return k;
     return "preset";
   }
 
+  // ── Translations (English / German only) ────────────────────────────────
+  const I18N = {
+    en: {
+      news_fallback: "News",
+      my_region: (n) => `My region · ${n}`,
+      google_title: (n) => `Google News · ${n}`,
+      loading: "Loading feed …",
+      no_items: "No headlines.",
+      entity_missing: (id) => `Entity ${id} not found.`,
+      entity_no_entries: (id) => `${id} has no "entries" attribute (Feedparser sensor expected).`,
+      no_source: "No source set (preset, url, entity, google or region).",
+      cors: 'Direct fetch blocked (CORS). Create a Feedparser sensor for this feed and bind it via "entity:" – see README.',
+      region_pick: "Please choose a region in the settings.",
+      tracker_missing: (id) => `Tracker ${id} not found.`,
+      no_location: "No location available – set the Home Assistant location or add a tracker.",
+      err_need_sections: 'Please set "sections" – each section needs preset, url, entity, google or region.',
+      err_unknown_preset: (p, i, list) => `Unknown preset "${p}" (section ${i}). Available: ${list}`,
+      err_unknown_region: (r, i, list) => `Unknown region "${r}" (section ${i}). Available: auto, ${list}`,
+      err_need_source: (i) => `Section ${i} needs preset, url, entity, google or region.`,
+      // editor
+      ed_language: "Language",
+      ed_lang_auto: "Automatic (Home Assistant)",
+      ed_card_title: "Card title",
+      ed_max_items: "Headlines per section (default)",
+      ed_show_time: "Show timestamps",
+      ed_sections: "Sections",
+      ed_section_n: (n) => `Section ${n}`,
+      ed_up: "Move up", ed_down: "Move down", ed_remove: "Remove",
+      ed_source: "Source",
+      ed_add: "+ Add section",
+      ed_heading_opt: "Heading (optional)",
+      ed_heading_ph: "Default depends on source",
+      ed_max_opt: "Headlines in this section (optional)",
+      ed_global: (n) => `global: ${n}`,
+      src_preset: "Standard feed (preset)",
+      src_region: "Region (auto / fixed)",
+      src_google: "Google News search",
+      src_url: "Custom RSS/Atom link",
+      src_entity: "Existing sensor",
+      ed_feed: "Feed",
+      ed_state: "Federal state",
+      ed_region_auto: "Automatic (location / GPS)",
+      ed_tracker: "GPS source (optional) – follows this person's position",
+      ed_tracker_ph: "e.g. person.rene",
+      ed_google: "Search term / place",
+      ed_google_ph: "e.g. Münster",
+      ed_google_hint: "Builds a Google News search feed – great for local news.",
+      ed_url: "RSS/Atom URL",
+      ed_url_ph: "https://…/feed.xml",
+      ed_entity: "Sensor (with entries attribute)",
+      ed_entity_ph: "sensor.my_feed",
+    },
+    de: {
+      news_fallback: "Nachrichten",
+      my_region: (n) => `Meine Region · ${n}`,
+      google_title: (n) => `Google News · ${n}`,
+      loading: "Feed wird geladen …",
+      no_items: "Keine Meldungen.",
+      entity_missing: (id) => `Entität ${id} nicht gefunden.`,
+      entity_no_entries: (id) => `${id} hat kein "entries"-Attribut (Feedparser-Sensor erwartet).`,
+      no_source: "Keine Quelle angegeben (preset, url, entity, google oder region).",
+      cors: 'Direkter Abruf blockiert (CORS). Lege für diesen Feed einen Feedparser-Sensor an und binde ihn per "entity:" ein – siehe README.',
+      region_pick: "Bitte Region in den Einstellungen wählen.",
+      tracker_missing: (id) => `Tracker ${id} nicht gefunden.`,
+      no_location: "Kein Standort verfügbar – HA-Standort setzen oder Tracker angeben.",
+      err_need_sections: 'Bitte "sections" angeben – jeder Abschnitt braucht preset, url, entity, google oder region.',
+      err_unknown_preset: (p, i, list) => `Unbekanntes Preset "${p}" (Abschnitt ${i}). Verfügbar: ${list}`,
+      err_unknown_region: (r, i, list) => `Unbekannte Region "${r}" (Abschnitt ${i}). Verfügbar: auto, ${list}`,
+      err_need_source: (i) => `Abschnitt ${i} braucht preset, url, entity, google oder region.`,
+      // editor
+      ed_language: "Sprache",
+      ed_lang_auto: "Automatisch (Home Assistant)",
+      ed_card_title: "Kartentitel",
+      ed_max_items: "Meldungen pro Abschnitt (Standard)",
+      ed_show_time: "Zeitstempel anzeigen",
+      ed_sections: "Abschnitte",
+      ed_section_n: (n) => `Abschnitt ${n}`,
+      ed_up: "Nach oben", ed_down: "Nach unten", ed_remove: "Entfernen",
+      ed_source: "Quelle",
+      ed_add: "+ Abschnitt hinzufügen",
+      ed_heading_opt: "Überschrift (optional)",
+      ed_heading_ph: "Standard je nach Quelle",
+      ed_max_opt: "Meldungen in diesem Abschnitt (optional)",
+      ed_global: (n) => `global: ${n}`,
+      src_preset: "Standard-Feed (Preset)",
+      src_region: "Region (automatisch/fest)",
+      src_google: "Google-News-Suche",
+      src_url: "Eigener RSS/Atom-Link",
+      src_entity: "Vorhandener Sensor",
+      ed_feed: "Feed",
+      ed_state: "Bundesland",
+      ed_region_auto: "Automatisch (Standort/GPS)",
+      ed_tracker: "GPS-Quelle (optional) – folgt der Position dieser Person",
+      ed_tracker_ph: "z. B. person.rene",
+      ed_google: "Suchbegriff / Ort",
+      ed_google_ph: "z. B. Münster",
+      ed_google_hint: "Baut einen Google-News-Suchfeed – ideal für Lokalnachrichten.",
+      ed_url: "RSS/Atom-URL",
+      ed_url_ph: "https://…/feed.xml",
+      ed_entity: "Sensor (mit entries-Attribut)",
+      ed_entity_ph: "sensor.mein_feed",
+    },
+  };
+
+  function resolveLang(config, hass) {
+    const raw = (config && config.language)
+      || (hass && (hass.language || (hass.locale && hass.locale.language)))
+      || "en";
+    return String(raw).toLowerCase().startsWith("de") ? "de" : "en";
+  }
+
   const FETCH_TTL_MS = 15 * 60 * 1000;
-  // URL -> { ts, items, error, pending } – geteilt über alle Karten-Instanzen
+  // url -> { ts, items, error, pending } – shared across all card instances
   const feedCache = new Map();
 
   function parseFeed(xmlText) {
     const doc = new DOMParser().parseFromString(xmlText, "text/xml");
-    if (doc.querySelector("parsererror")) throw new Error("Antwort ist kein gültiges XML");
+    if (doc.querySelector("parsererror")) throw new Error("Response is not valid XML");
     const items = [];
     // RSS 2.0
     doc.querySelectorAll("item").forEach((item) => {
@@ -162,46 +265,44 @@
     return items.map((i) => ({ ...i, title: i.title.trim(), link: i.link.trim() }));
   }
 
-  function formatTime(dateStr) {
+  function formatTime(dateStr, locale) {
     if (!dateStr) return "";
     const d = new Date(dateStr);
-    if (isNaN(d)) return String(dateStr); // Feedparser liefert bereits formatierte Strings
+    if (isNaN(d)) return String(dateStr); // Feedparser already delivers formatted strings
     const today = new Date().toDateString() === d.toDateString();
     return today
-      ? d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })
-      : d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" });
+      ? d.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" })
+      : d.toLocaleDateString(locale, { day: "2-digit", month: "2-digit" });
   }
 
-  class MorgenbriefingCard extends HTMLElement {
+  class NewsCard extends HTMLElement {
     static getStubConfig() {
       return { sections: [{ preset: "tagesschau" }] };
     }
 
-    // Grafisches Einstellungsmenü (Zahnrad beim Bearbeiten der Karte)
+    // Visual settings menu (gear icon when editing the card)
     static getConfigElement() {
-      return document.createElement("morgenbriefing-card-editor");
+      return document.createElement("news-card-editor");
     }
 
     setConfig(config) {
+      const t = I18N[resolveLang(config, this._hass)];
       if (!Array.isArray(config.sections) || !config.sections.length) {
-        throw new Error('Bitte "sections" angeben – jeder Abschnitt braucht preset, url, entity, google oder region.');
+        throw new Error(t.err_need_sections);
       }
       config.sections.forEach((s, i) => {
         if (s.preset && !PRESETS[s.preset]) {
-          throw new Error(`Unbekanntes Preset "${s.preset}" (Abschnitt ${i + 1}). Verfügbar: ${Object.keys(PRESETS).join(", ")}`);
+          throw new Error(t.err_unknown_preset(s.preset, i + 1, Object.keys(PRESETS).join(", ")));
         }
         if (s.region && s.region !== "auto" && !REGIONS[String(s.region).toLowerCase()]) {
-          throw new Error(`Unbekannte Region "${s.region}" (Abschnitt ${i + 1}). Verfügbar: auto, ${Object.keys(REGIONS).join(", ")}`);
+          throw new Error(t.err_unknown_region(s.region, i + 1, Object.keys(REGIONS).join(", ")));
         }
-        // Der Editor legt kurzzeitig leere Quellen an (z. B. { google: "" }
-        // während des Tippens). Solche unvollständigen Abschnitte dürfen die
-        // Karte nicht abstürzen lassen – wir prüfen darum nur, ob überhaupt
-        // ein Quellen-Schlüssel gesetzt ist, und melden Unfertiges pro
-        // Abschnitt freundlich in _sectionData().
+        // The editor briefly creates empty sources (e.g. { google: "" } while
+        // typing). Such incomplete sections must not crash the card – we only
+        // check that a source key exists and report anything unfinished per
+        // section in _sectionData().
         const hasSource = SOURCE_KEYS.some((k) => k in s);
-        if (!hasSource) {
-          throw new Error(`Abschnitt ${i + 1} braucht preset, url, entity, google oder region.`);
-        }
+        if (!hasSource) throw new Error(t.err_need_source(i + 1));
       });
       this._config = config;
       this._renderKey = null;
@@ -210,7 +311,6 @@
 
     set hass(hass) {
       this._hass = hass;
-      // Nur neu rendern, wenn sich eine beteiligte Entität geändert hat
       const key = this._entityIds()
         .map((id) => (hass.states[id] ? hass.states[id].last_updated : "?"))
         .join("|");
@@ -225,55 +325,58 @@
       return 1 + (this._config ? this._config.sections.length : 1) * Math.min(max, 5) * 0.5;
     }
 
+    _lang() { return resolveLang(this._config, this._hass); }
+
     _entityIds() {
       if (!this._config) return [];
       const ids = [];
       for (const s of this._config.sections) {
         if (s.entity) ids.push(s.entity);
-        if (s.preset) ids.push(`sensor.mb_${s.preset}`);
+        if (s.preset) ids.push(`sensor.news_${s.preset}`);
         if (s.tracker) ids.push(s.tracker);
         if (s.region && this._hass) {
           const r = this._resolveRegion(s);
-          if (r.region && r.region.preset) ids.push(`sensor.mb_${r.region.preset}`);
+          if (r.region && r.region.preset) ids.push(`sensor.news_${r.region.preset}`);
         }
       }
       return ids;
     }
 
-    // region: auto -> Koordinaten (Tracker oder HA-Standort) -> Bundesland;
-    // region: <key> -> festes Bundesland
+    // region: auto -> coordinates (tracker or HA location) -> federal state;
+    // region: <key> -> fixed federal state
     _resolveRegion(section) {
+      const t = I18N[this._lang()];
       const key = String(section.region).toLowerCase();
       if (key !== "auto") {
-        if (!REGIONS[key]) return { error: "Bitte Region in den Einstellungen wählen." };
+        if (!REGIONS[key]) return { error: t.region_pick };
         return { region: REGIONS[key] };
       }
       let lat, lon;
       if (section.tracker) {
         const st = this._hass && this._hass.states[section.tracker];
-        if (!st) return { error: `Tracker ${section.tracker} nicht gefunden.` };
+        if (!st) return { error: t.tracker_missing(section.tracker) };
         lat = st.attributes.latitude;
         lon = st.attributes.longitude;
       }
       if ((lat == null || lon == null) && this._hass && this._hass.config) {
-        // Fallback: Standort der Home-Assistant-Instanz
         lat = this._hass.config.latitude;
         lon = this._hass.config.longitude;
       }
-      if (lat == null || lon == null) {
-        return { error: "Kein Standort verfügbar – HA-Standort setzen oder tracker: angeben." };
-      }
+      if (lat == null || lon == null) return { error: t.no_location };
       return { region: REGIONS[nearestRegionKey(lat, lon)] };
     }
 
     _sectionData(section) {
-      // 0. Region (Bundesland) automatisch oder fest -> auf preset/google abbilden
+      const t = I18N[this._lang()];
+      const maxItems = section.max_items || (this._config.max_items || 5);
+
+      // 0. Region (federal state) auto or fixed -> map onto preset/google
       if (section.region) {
         const resolved = this._resolveRegion(section);
-        if (resolved.error) return { title: section.title || "Meine Region", error: resolved.error };
+        if (resolved.error) return { title: section.title || t.my_region(""), error: resolved.error };
         const region = resolved.region;
         const mapped = { ...section, region: undefined, tracker: undefined,
-          title: section.title || `Meine Region · ${region.name}` };
+          title: section.title || t.my_region(region.name) };
         if (region.preset) mapped.preset = region.preset;
         else mapped.google = region.google;
         return this._sectionData(mapped);
@@ -282,22 +385,19 @@
       const preset = section.preset ? PRESETS[section.preset] : null;
       const title = section.title
         || (preset && preset.title)
-        || (section.google && `Google News · ${section.google}`)
-        || section.entity || "News";
-      const maxItems = section.max_items || (this._config.max_items || 5);
+        || (section.google && t.google_title(section.google))
+        || section.entity || t.news_fallback;
 
-      // 1. Explizit angegebener oder per Preset-Konvention gefundener Sensor
+      // 1. Explicit or preset-convention sensor
       let entityId = section.entity;
-      if (!entityId && section.preset && this._hass && this._hass.states[`sensor.mb_${section.preset}`]) {
-        entityId = `sensor.mb_${section.preset}`;
+      if (!entityId && section.preset && this._hass && this._hass.states[`sensor.news_${section.preset}`]) {
+        entityId = `sensor.news_${section.preset}`;
       }
       if (entityId) {
         const st = this._hass && this._hass.states[entityId];
-        if (!st) return { title, error: `Entität ${entityId} nicht gefunden.` };
+        if (!st) return { title, error: t.entity_missing(entityId) };
         const entries = st.attributes.entries;
-        if (!Array.isArray(entries)) {
-          return { title, error: `${entityId} hat kein "entries"-Attribut (Feedparser-Sensor erwartet).` };
-        }
+        if (!Array.isArray(entries)) return { title, error: t.entity_no_entries(entityId) };
         return {
           title,
           items: entries.slice(0, maxItems).map((e) => ({
@@ -306,15 +406,15 @@
         };
       }
 
-      // 2. Direkter Abruf einer URL (eigener Link, Google-Suchfeed oder Preset-Feed)
+      // 2. Direct fetch of a URL (custom link, Google search feed or preset feed)
       const url = section.url
         || (section.google && googleSearchUrl(section.google))
         || (preset && preset.url);
-      if (!url) return { title, error: "Keine Quelle angegeben (preset, url, entity, google oder region)." };
+      if (!url) return { title, error: t.no_source };
 
       const cached = feedCache.get(url);
       if (cached && Date.now() - cached.ts < FETCH_TTL_MS) {
-        if (cached.error) return { title, error: cached.error };
+        if (cached.error) return { title, error: t.cors };
         return { title, items: (cached.items || []).slice(0, maxItems) };
       }
       if (!cached || !cached.pending) {
@@ -325,13 +425,7 @@
             return r.text();
           })
           .then((text) => feedCache.set(url, { ts: Date.now(), items: parseFeed(text) }))
-          .catch(() => {
-            feedCache.set(url, {
-              ts: Date.now(),
-              error: "Direkter Abruf blockiert (CORS). Lege für diesen Feed einen Feedparser-Sensor an " +
-                     "und binde ihn per entity: ein – siehe README.",
-            });
-          })
+          .catch(() => feedCache.set(url, { ts: Date.now(), error: "cors" }))
           .finally(() => this._render());
       }
       if (cached && cached.items) return { title, items: cached.items.slice(0, maxItems) };
@@ -342,9 +436,12 @@
       if (!this._config) return;
       if (!this.shadowRoot) this.attachShadow({ mode: "open" });
 
+      const lang = this._lang();
+      const t = I18N[lang];
+      const locale = lang === "de" ? "de-DE" : "en-GB";
       const showTime = this._config.show_time !== false;
-      const headerTitle = this._config.title || "Morgenbriefing";
-      const dateLine = new Date().toLocaleDateString("de-DE", {
+      const headerTitle = this._config.title || CARD_NAME;
+      const dateLine = new Date().toLocaleDateString(locale, {
         weekday: "long", day: "2-digit", month: "2-digit", year: "numeric",
       });
 
@@ -354,13 +451,13 @@
         if (data.error) {
           body = `<div class="msg error">${escapeHtml(data.error)}</div>`;
         } else if (data.loading) {
-          body = `<div class="msg">Lade Feed …</div>`;
+          body = `<div class="msg">${escapeHtml(t.loading)}</div>`;
         } else if (!data.items.length) {
-          body = `<div class="msg">Keine Meldungen.</div>`;
+          body = `<div class="msg">${escapeHtml(t.no_items)}</div>`;
         } else {
           body = data.items.map((item) => `
             <a class="item" href="${escapeAttr(item.link)}" target="_blank" rel="noopener noreferrer">
-              ${showTime ? `<span class="time">${escapeHtml(formatTime(item.date))}</span>` : ""}
+              ${showTime ? `<span class="time">${escapeHtml(formatTime(item.date, locale))}</span>` : ""}
               <span class="headline">${escapeHtml(item.title)}</span>
             </a>`).join("");
         }
@@ -412,35 +509,30 @@
   }
 
   // ────────────────────────────────────────────────────────────────────────
-  // Grafisches Einstellungsmenü (Visual Editor)
+  // Visual editor
   // ────────────────────────────────────────────────────────────────────────
-  const REGION_OPTIONS = [["auto", "Automatisch (Standort/GPS)"]]
-    .concat(Object.entries(REGIONS).map(([k, v]) => [k, v.name]));
-
-  class MorgenbriefingCardEditor extends HTMLElement {
+  class NewsCardEditor extends HTMLElement {
     setConfig(config) {
-      // Arbeitskopie – jeder Abschnitt als eigenes Objekt, damit Bearbeiten
-      // die vom Nutzer geladene Konfig nicht direkt mutiert.
       const sections = Array.isArray(config.sections) && config.sections.length
         ? config.sections.map((s) => ({ ...s }))
         : [{ preset: "tagesschau" }];
-      this._config = { type: config.type || "custom:morgenbriefing-card",
-        title: config.title, max_items: config.max_items,
+      this._config = { type: config.type || "custom:news-card",
+        language: config.language, title: config.title, max_items: config.max_items,
         show_time: config.show_time, sections };
       this._render();
     }
 
     set hass(hass) {
       this._hass = hass;
-      // Einmal neu rendern, sobald hass da ist – füllt die Vorschlagslisten
-      // (Sensoren, Tracker) für die Eingabefelder.
       if (!this._hassReady && this._config) { this._hassReady = true; this._render(); }
     }
 
-    // Bereinigte, an Home Assistant gemeldete Konfiguration
+    _lang() { return resolveLang(this._config, this._hass); }
+
     _emit() {
       const c = this._config;
-      const out = { type: c.type || "custom:morgenbriefing-card" };
+      const out = { type: c.type || "custom:news-card" };
+      if (c.language) out.language = c.language;
       if (c.title) out.title = c.title;
       if (c.max_items) out.max_items = Number(c.max_items);
       if (c.show_time === false) out.show_time = false;
@@ -457,7 +549,6 @@
         detail: { config: out }, bubbles: true, composed: true }));
     }
 
-    // Feld ohne Neu-Rendern aktualisieren (behält den Fokus beim Tippen)
     _set(index, key, value) {
       const target = index == null ? this._config : this._config.sections[index];
       if (value === "" || value == null) delete target[key];
@@ -509,70 +600,70 @@
         if (id.startsWith("person.") || id.startsWith("device_tracker.")) trackers.push(id);
       }
       const opts = (ids) => ids.sort().map((id) => `<option value="${escapeHtml(id)}"></option>`).join("");
-      return `<datalist id="mbe-feeds">${opts(feeds)}</datalist>` +
-             `<datalist id="mbe-trackers">${opts(trackers)}</datalist>`;
+      return `<datalist id="nc-feeds">${opts(feeds)}</datalist>` +
+             `<datalist id="nc-trackers">${opts(trackers)}</datalist>`;
     }
 
-    _sourceFieldHtml(section, i) {
+    _sourceFieldHtml(section, i, t) {
       const type = sectionSourceType(section);
       if (type === "preset") {
         const opts = Object.entries(PRESETS)
           .map(([k, v]) => `<option value="${k}"${k === section.preset ? " selected" : ""}>${escapeHtml(v.title)}</option>`)
           .join("");
-        return `<label class="field"><span>Feed</span>
+        return `<label class="field"><span>${escapeHtml(t.ed_feed)}</span>
           <select data-i="${i}" data-role="preset">${opts}</select></label>`;
       }
       if (type === "region") {
-        const opts = REGION_OPTIONS
+        const regionOpts = [["auto", t.ed_region_auto]]
+          .concat(Object.entries(REGIONS).map(([k, v]) => [k, v.name]))
           .map(([k, name]) => `<option value="${k}"${k === section.region ? " selected" : ""}>${escapeHtml(name)}</option>`)
           .join("");
         const trackerRow = section.region === "auto"
-          ? `<label class="field"><span>GPS-Quelle (optional) – folgt der Position dieser Person</span>
-             <input type="text" list="mbe-trackers" placeholder="z. B. person.rene"
+          ? `<label class="field"><span>${escapeHtml(t.ed_tracker)}</span>
+             <input type="text" list="nc-trackers" placeholder="${escapeHtml(t.ed_tracker_ph)}"
                data-i="${i}" data-role="tracker" value="${escapeHtml(section.tracker || "")}"></label>`
           : "";
-        return `<label class="field"><span>Bundesland</span>
-          <select data-i="${i}" data-role="region">${opts}</select></label>${trackerRow}`;
+        return `<label class="field"><span>${escapeHtml(t.ed_state)}</span>
+          <select data-i="${i}" data-role="region">${regionOpts}</select></label>${trackerRow}`;
       }
       if (type === "google") {
-        return `<label class="field"><span>Suchbegriff / Ort</span>
-          <input type="text" placeholder="z. B. Münster" data-i="${i}" data-role="google"
+        return `<label class="field"><span>${escapeHtml(t.ed_google)}</span>
+          <input type="text" placeholder="${escapeHtml(t.ed_google_ph)}" data-i="${i}" data-role="google"
             value="${escapeHtml(section.google || "")}"></label>
-          <div class="hint">Baut einen Google-News-Suchfeed – ideal für Lokalnachrichten.</div>`;
+          <div class="hint">${escapeHtml(t.ed_google_hint)}</div>`;
       }
       if (type === "url") {
-        return `<label class="field"><span>RSS/Atom-URL</span>
-          <input type="text" placeholder="https://…/feed.xml" data-i="${i}" data-role="url"
+        return `<label class="field"><span>${escapeHtml(t.ed_url)}</span>
+          <input type="text" placeholder="${escapeHtml(t.ed_url_ph)}" data-i="${i}" data-role="url"
             value="${escapeHtml(section.url || "")}"></label>`;
       }
-      // entity
-      return `<label class="field"><span>Sensor (mit entries-Attribut)</span>
-        <input type="text" list="mbe-feeds" placeholder="sensor.mein_feed" data-i="${i}" data-role="entity"
+      return `<label class="field"><span>${escapeHtml(t.ed_entity)}</span>
+        <input type="text" list="nc-feeds" placeholder="${escapeHtml(t.ed_entity_ph)}" data-i="${i}" data-role="entity"
           value="${escapeHtml(section.entity || "")}"></label>`;
     }
 
-    _sectionHtml(section, i, count) {
+    _sectionHtml(section, i, count, t) {
       const type = sectionSourceType(section);
-      const typeOpts = SOURCE_TYPES
-        .map(([k, label]) => `<option value="${k}"${k === type ? " selected" : ""}>${escapeHtml(label)}</option>`)
+      const typeOpts = SOURCE_KEYS
+        .map((k) => `<option value="${k}"${k === type ? " selected" : ""}>${escapeHtml(t["src_" + k])}</option>`)
         .join("");
       return `<div class="section-card">
         <div class="se-head">
-          <span class="se-title">Abschnitt ${i + 1}</span>
+          <span class="se-title">${escapeHtml(t.ed_section_n(i + 1))}</span>
           <div class="se-actions">
-            <button data-i="${i}" data-act="up" title="Nach oben"${i === 0 ? " disabled" : ""}>↑</button>
-            <button data-i="${i}" data-act="down" title="Nach unten"${i === count - 1 ? " disabled" : ""}>↓</button>
-            <button data-i="${i}" data-act="remove" title="Entfernen">✕</button>
+            <button data-i="${i}" data-act="up" title="${escapeHtml(t.ed_up)}"${i === 0 ? " disabled" : ""}>↑</button>
+            <button data-i="${i}" data-act="down" title="${escapeHtml(t.ed_down)}"${i === count - 1 ? " disabled" : ""}>↓</button>
+            <button data-i="${i}" data-act="remove" title="${escapeHtml(t.ed_remove)}">✕</button>
           </div>
         </div>
-        <label class="field"><span>Quelle</span>
+        <label class="field"><span>${escapeHtml(t.ed_source)}</span>
           <select data-i="${i}" data-role="source-type">${typeOpts}</select></label>
-        ${this._sourceFieldHtml(section, i)}
-        <label class="field"><span>Überschrift (optional)</span>
-          <input type="text" placeholder="Standard je nach Quelle" data-i="${i}" data-role="title"
+        ${this._sourceFieldHtml(section, i, t)}
+        <label class="field"><span>${escapeHtml(t.ed_heading_opt)}</span>
+          <input type="text" placeholder="${escapeHtml(t.ed_heading_ph)}" data-i="${i}" data-role="title"
             value="${escapeHtml(section.title || "")}"></label>
-        <label class="field"><span>Meldungen in diesem Abschnitt (optional)</span>
-          <input type="number" min="1" max="20" placeholder="global: ${this._config.max_items || 5}"
+        <label class="field"><span>${escapeHtml(t.ed_max_opt)}</span>
+          <input type="number" min="1" max="20" placeholder="${escapeHtml(t.ed_global(this._config.max_items || 5))}"
             data-i="${i}" data-role="max_items" value="${section.max_items != null ? section.max_items : ""}"></label>
       </div>`;
     }
@@ -580,77 +671,83 @@
     _render() {
       if (!this._config) return;
       const c = this._config;
-      const sectionsHtml = c.sections.map((s, i) => this._sectionHtml(s, i, c.sections.length)).join("");
+      const t = I18N[this._lang()];
+      const langOpts = [["", t.ed_lang_auto], ["en", "English"], ["de", "Deutsch"]]
+        .map(([k, label]) => `<option value="${k}"${(c.language || "") === k ? " selected" : ""}>${escapeHtml(label)}</option>`)
+        .join("");
+      const sectionsHtml = c.sections.map((s, i) => this._sectionHtml(s, i, c.sections.length, t)).join("");
       this.innerHTML = `
         <style>
-          .mbe { display: flex; flex-direction: column; gap: 16px; padding: 4px 0; }
-          .mbe .group { display: flex; flex-direction: column; gap: 12px; }
-          .mbe .field { display: flex; flex-direction: column; gap: 4px;
+          .nce { display: flex; flex-direction: column; gap: 16px; padding: 4px 0; }
+          .nce .group { display: flex; flex-direction: column; gap: 12px; }
+          .nce .field { display: flex; flex-direction: column; gap: 4px;
             font-size: 0.8em; color: var(--secondary-text-color, #666); }
-          .mbe .field.switch { flex-direction: row; align-items: center; gap: 8px;
+          .nce .field.switch { flex-direction: row; align-items: center; gap: 8px;
             font-size: 0.95em; color: var(--primary-text-color, #000); }
-          .mbe input[type=text], .mbe input[type=number], .mbe select {
+          .nce input[type=text], .nce input[type=number], .nce select {
             padding: 8px 10px; border: 1px solid var(--divider-color, #ccc); border-radius: 6px;
             background: var(--card-background-color, #fff); color: var(--primary-text-color, #000);
             font-size: 1rem; font-family: inherit; width: 100%; box-sizing: border-box; }
-          .mbe .section-card { border: 1px solid var(--divider-color, #ccc); border-radius: 10px;
+          .nce .section-card { border: 1px solid var(--divider-color, #ccc); border-radius: 10px;
             padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
-          .mbe .se-head { display: flex; align-items: center; justify-content: space-between; }
-          .mbe .se-title { font-weight: 600; color: var(--primary-text-color, #000); }
-          .mbe .se-actions { display: flex; gap: 4px; }
-          .mbe button { cursor: pointer; border: 1px solid var(--divider-color, #ccc);
+          .nce .se-head { display: flex; align-items: center; justify-content: space-between; }
+          .nce .se-title { font-weight: 600; color: var(--primary-text-color, #000); }
+          .nce .se-actions { display: flex; gap: 4px; }
+          .nce button { cursor: pointer; border: 1px solid var(--divider-color, #ccc);
             border-radius: 6px; background: var(--card-background-color, #fff);
             color: var(--primary-text-color, #000); padding: 4px 9px; font-size: 0.95em; }
-          .mbe button:disabled { opacity: 0.35; cursor: default; }
-          .mbe .add { align-self: flex-start; padding: 9px 16px; font-weight: 600;
+          .nce button:disabled { opacity: 0.35; cursor: default; }
+          .nce .add { align-self: flex-start; padding: 9px 16px; font-weight: 600;
             color: var(--primary-color, #03a9f4); border-color: var(--primary-color, #03a9f4); }
-          .mbe .hint { font-size: 0.78em; color: var(--secondary-text-color, #888); margin-top: -4px; }
-          .mbe .sec-heading { font-size: 0.78em; letter-spacing: 0.08em; text-transform: uppercase;
+          .nce .hint { font-size: 0.78em; color: var(--secondary-text-color, #888); margin-top: -4px; }
+          .nce .sec-heading { font-size: 0.78em; letter-spacing: 0.08em; text-transform: uppercase;
             color: var(--secondary-text-color, #888); font-weight: 600; }
         </style>
-        <div class="mbe">
+        <div class="nce">
           <div class="group">
-            <label class="field"><span>Kartentitel</span>
-              <input type="text" placeholder="Morgenbriefing" data-role="title" value="${escapeHtml(c.title || "")}"></label>
-            <label class="field"><span>Meldungen pro Abschnitt (Standard)</span>
+            <label class="field"><span>${escapeHtml(t.ed_language)}</span>
+              <select data-role="language">${langOpts}</select></label>
+            <label class="field"><span>${escapeHtml(t.ed_card_title)}</span>
+              <input type="text" placeholder="${escapeHtml(CARD_NAME)}" data-role="title" value="${escapeHtml(c.title || "")}"></label>
+            <label class="field"><span>${escapeHtml(t.ed_max_items)}</span>
               <input type="number" min="1" max="20" placeholder="5" data-role="max_items"
                 value="${c.max_items != null ? c.max_items : ""}"></label>
             <label class="field switch">
               <input type="checkbox" data-role="show_time"${c.show_time === false ? "" : " checked"}>
-              Zeitstempel anzeigen</label>
+              ${escapeHtml(t.ed_show_time)}</label>
           </div>
-          <div class="sec-heading">Abschnitte</div>
+          <div class="sec-heading">${escapeHtml(t.ed_sections)}</div>
           ${sectionsHtml}
-          <button class="add" data-act="add">+ Abschnitt hinzufügen</button>
+          <button class="add" data-act="add">${escapeHtml(t.ed_add)}</button>
         </div>
         ${this._datalists()}`;
       this._bind();
     }
 
     _bind() {
-      // Text-/Zahlenfelder: ohne Neu-Rendern aktualisieren (Fokus bleibt)
       this.querySelectorAll('input[type=text], input[type=number]').forEach((el) => {
         el.addEventListener("input", () => {
           const i = el.dataset.i != null ? Number(el.dataset.i) : null;
           this._set(i, el.dataset.role, el.value.trim());
         });
       });
-      // Checkbox Zeitstempel
       const showTime = this.querySelector('input[data-role="show_time"]');
       if (showTime) showTime.addEventListener("change", () => {
         if (showTime.checked) delete this._config.show_time; else this._config.show_time = false;
         this._emit();
       });
-      // Auswahlfelder
       this.querySelectorAll("select").forEach((el) => {
         el.addEventListener("change", () => {
-          const i = Number(el.dataset.i);
           const role = el.dataset.role;
+          if (role === "language") {
+            if (el.value) this._config.language = el.value; else delete this._config.language;
+            this._render(); this._emit(); return;
+          }
+          const i = Number(el.dataset.i);
           if (role === "source-type") this._setSourceType(i, el.value);
           else { this._set(i, role, el.value); if (role === "region") this._render(); }
         });
       });
-      // Buttons (Hinzufügen / Verschieben / Entfernen)
       this.querySelectorAll("button").forEach((el) => {
         el.addEventListener("click", () => {
           const act = el.dataset.act;
@@ -670,13 +767,13 @@
     return out;
   }
 
-  customElements.define("morgenbriefing-card-editor", MorgenbriefingCardEditor);
-  customElements.define("morgenbriefing-card", MorgenbriefingCard);
+  customElements.define("news-card-editor", NewsCardEditor);
+  customElements.define("news-card", NewsCard);
   window.customCards = window.customCards || [];
   window.customCards.push({
-    type: "morgenbriefing-card",
-    name: "Morgenbriefing Card",
-    description: "News-Karte mit Standard-Feeds (tagesschau, Google News, Regionalsender u. a.), automatischer Regional-Erkennung per HA-Standort/GPS, Google-News-Suche, eigenen RSS-URLs und vorhandenen Feed-Sensoren.",
+    type: "news-card",
+    name: CARD_NAME,
+    description: "News card with built-in feeds (tagesschau, Google News, regional broadcasters), automatic region detection via HA location/GPS, Google News search, custom RSS URLs and existing feed sensors. UI in English or German.",
     preview: true,
     documentationURL: "https://github.com/renespeaker/ha-news-card",
   });

@@ -116,6 +116,22 @@
     return best;
   }
 
+  // Mögliche Quellen-Schlüssel eines Abschnitts, in Anzeige-Reihenfolge.
+  // Vom grafischen Editor und der Konfig-Prüfung gemeinsam genutzt.
+  const SOURCE_TYPES = [
+    ["preset", "Standard-Feed (Preset)"],
+    ["region", "Region (automatisch/fest)"],
+    ["google", "Google-News-Suche"],
+    ["url", "Eigener RSS/Atom-Link"],
+    ["entity", "Vorhandener Sensor"],
+  ];
+  const SOURCE_KEYS = SOURCE_TYPES.map(([k]) => k);
+
+  function sectionSourceType(section) {
+    for (const k of SOURCE_KEYS) if (k in section) return k;
+    return "preset";
+  }
+
   const FETCH_TTL_MS = 15 * 60 * 1000;
   // URL -> { ts, items, error, pending } – geteilt über alle Karten-Instanzen
   const feedCache = new Map();
@@ -161,6 +177,11 @@
       return { sections: [{ preset: "tagesschau" }] };
     }
 
+    // Grafisches Einstellungsmenü (Zahnrad beim Bearbeiten der Karte)
+    static getConfigElement() {
+      return document.createElement("morgenbriefing-card-editor");
+    }
+
     setConfig(config) {
       if (!Array.isArray(config.sections) || !config.sections.length) {
         throw new Error('Bitte "sections" angeben – jeder Abschnitt braucht preset, url, entity, google oder region.');
@@ -172,7 +193,13 @@
         if (s.region && s.region !== "auto" && !REGIONS[String(s.region).toLowerCase()]) {
           throw new Error(`Unbekannte Region "${s.region}" (Abschnitt ${i + 1}). Verfügbar: auto, ${Object.keys(REGIONS).join(", ")}`);
         }
-        if (!s.preset && !s.url && !s.entity && !s.google && !s.region) {
+        // Der Editor legt kurzzeitig leere Quellen an (z. B. { google: "" }
+        // während des Tippens). Solche unvollständigen Abschnitte dürfen die
+        // Karte nicht abstürzen lassen – wir prüfen darum nur, ob überhaupt
+        // ein Quellen-Schlüssel gesetzt ist, und melden Unfertiges pro
+        // Abschnitt freundlich in _sectionData().
+        const hasSource = SOURCE_KEYS.some((k) => k in s);
+        if (!hasSource) {
           throw new Error(`Abschnitt ${i + 1} braucht preset, url, entity, google oder region.`);
         }
       });
@@ -218,6 +245,7 @@
     _resolveRegion(section) {
       const key = String(section.region).toLowerCase();
       if (key !== "auto") {
+        if (!REGIONS[key]) return { error: "Bitte Region in den Einstellungen wählen." };
         return { region: REGIONS[key] };
       }
       let lat, lon;
@@ -383,11 +411,273 @@
     return /^https?:\/\//i.test(url) ? escapeHtml(url) : "#";
   }
 
+  // ────────────────────────────────────────────────────────────────────────
+  // Grafisches Einstellungsmenü (Visual Editor)
+  // ────────────────────────────────────────────────────────────────────────
+  const REGION_OPTIONS = [["auto", "Automatisch (Standort/GPS)"]]
+    .concat(Object.entries(REGIONS).map(([k, v]) => [k, v.name]));
+
+  class MorgenbriefingCardEditor extends HTMLElement {
+    setConfig(config) {
+      // Arbeitskopie – jeder Abschnitt als eigenes Objekt, damit Bearbeiten
+      // die vom Nutzer geladene Konfig nicht direkt mutiert.
+      const sections = Array.isArray(config.sections) && config.sections.length
+        ? config.sections.map((s) => ({ ...s }))
+        : [{ preset: "tagesschau" }];
+      this._config = { type: config.type || "custom:morgenbriefing-card",
+        title: config.title, max_items: config.max_items,
+        show_time: config.show_time, sections };
+      this._render();
+    }
+
+    set hass(hass) {
+      this._hass = hass;
+      // Einmal neu rendern, sobald hass da ist – füllt die Vorschlagslisten
+      // (Sensoren, Tracker) für die Eingabefelder.
+      if (!this._hassReady && this._config) { this._hassReady = true; this._render(); }
+    }
+
+    // Bereinigte, an Home Assistant gemeldete Konfiguration
+    _emit() {
+      const c = this._config;
+      const out = { type: c.type || "custom:morgenbriefing-card" };
+      if (c.title) out.title = c.title;
+      if (c.max_items) out.max_items = Number(c.max_items);
+      if (c.show_time === false) out.show_time = false;
+      out.sections = c.sections.map((s) => {
+        const type = sectionSourceType(s);
+        const sec = {};
+        sec[type] = s[type] != null ? s[type] : "";
+        if (type === "region" && s.tracker) sec.tracker = s.tracker;
+        if (s.title) sec.title = s.title;
+        if (s.max_items) sec.max_items = Number(s.max_items);
+        return sec;
+      });
+      this.dispatchEvent(new CustomEvent("config-changed", {
+        detail: { config: out }, bubbles: true, composed: true }));
+    }
+
+    // Feld ohne Neu-Rendern aktualisieren (behält den Fokus beim Tippen)
+    _set(index, key, value) {
+      const target = index == null ? this._config : this._config.sections[index];
+      if (value === "" || value == null) delete target[key];
+      else target[key] = value;
+      this._emit();
+    }
+
+    _setSourceType(index, type) {
+      const s = this._config.sections[index];
+      const keep = { title: s.title, max_items: s.max_items };
+      const next = {};
+      if (type === "preset") next.preset = s.preset || "tagesschau";
+      else if (type === "region") { next.region = s.region || "auto"; if (s.tracker) next.tracker = s.tracker; }
+      else next[type] = s[type] || "";
+      this._config.sections[index] = { ...next, ...clean(keep) };
+      this._render();
+      this._emit();
+    }
+
+    _addSection() {
+      this._config.sections.push({ preset: "tagesschau" });
+      this._render();
+      this._emit();
+    }
+
+    _removeSection(index) {
+      this._config.sections.splice(index, 1);
+      if (!this._config.sections.length) this._config.sections.push({ preset: "tagesschau" });
+      this._render();
+      this._emit();
+    }
+
+    _moveSection(index, delta) {
+      const j = index + delta;
+      const arr = this._config.sections;
+      if (j < 0 || j >= arr.length) return;
+      [arr[index], arr[j]] = [arr[j], arr[index]];
+      this._render();
+      this._emit();
+    }
+
+    _datalists() {
+      const states = (this._hass && this._hass.states) || {};
+      const feeds = [];
+      const trackers = [];
+      for (const id of Object.keys(states)) {
+        const attrs = states[id].attributes || {};
+        if (Array.isArray(attrs.entries)) feeds.push(id);
+        if (id.startsWith("person.") || id.startsWith("device_tracker.")) trackers.push(id);
+      }
+      const opts = (ids) => ids.sort().map((id) => `<option value="${escapeHtml(id)}"></option>`).join("");
+      return `<datalist id="mbe-feeds">${opts(feeds)}</datalist>` +
+             `<datalist id="mbe-trackers">${opts(trackers)}</datalist>`;
+    }
+
+    _sourceFieldHtml(section, i) {
+      const type = sectionSourceType(section);
+      if (type === "preset") {
+        const opts = Object.entries(PRESETS)
+          .map(([k, v]) => `<option value="${k}"${k === section.preset ? " selected" : ""}>${escapeHtml(v.title)}</option>`)
+          .join("");
+        return `<label class="field"><span>Feed</span>
+          <select data-i="${i}" data-role="preset">${opts}</select></label>`;
+      }
+      if (type === "region") {
+        const opts = REGION_OPTIONS
+          .map(([k, name]) => `<option value="${k}"${k === section.region ? " selected" : ""}>${escapeHtml(name)}</option>`)
+          .join("");
+        const trackerRow = section.region === "auto"
+          ? `<label class="field"><span>GPS-Quelle (optional) – folgt der Position dieser Person</span>
+             <input type="text" list="mbe-trackers" placeholder="z. B. person.rene"
+               data-i="${i}" data-role="tracker" value="${escapeHtml(section.tracker || "")}"></label>`
+          : "";
+        return `<label class="field"><span>Bundesland</span>
+          <select data-i="${i}" data-role="region">${opts}</select></label>${trackerRow}`;
+      }
+      if (type === "google") {
+        return `<label class="field"><span>Suchbegriff / Ort</span>
+          <input type="text" placeholder="z. B. Münster" data-i="${i}" data-role="google"
+            value="${escapeHtml(section.google || "")}"></label>
+          <div class="hint">Baut einen Google-News-Suchfeed – ideal für Lokalnachrichten.</div>`;
+      }
+      if (type === "url") {
+        return `<label class="field"><span>RSS/Atom-URL</span>
+          <input type="text" placeholder="https://…/feed.xml" data-i="${i}" data-role="url"
+            value="${escapeHtml(section.url || "")}"></label>`;
+      }
+      // entity
+      return `<label class="field"><span>Sensor (mit entries-Attribut)</span>
+        <input type="text" list="mbe-feeds" placeholder="sensor.mein_feed" data-i="${i}" data-role="entity"
+          value="${escapeHtml(section.entity || "")}"></label>`;
+    }
+
+    _sectionHtml(section, i, count) {
+      const type = sectionSourceType(section);
+      const typeOpts = SOURCE_TYPES
+        .map(([k, label]) => `<option value="${k}"${k === type ? " selected" : ""}>${escapeHtml(label)}</option>`)
+        .join("");
+      return `<div class="section-card">
+        <div class="se-head">
+          <span class="se-title">Abschnitt ${i + 1}</span>
+          <div class="se-actions">
+            <button data-i="${i}" data-act="up" title="Nach oben"${i === 0 ? " disabled" : ""}>↑</button>
+            <button data-i="${i}" data-act="down" title="Nach unten"${i === count - 1 ? " disabled" : ""}>↓</button>
+            <button data-i="${i}" data-act="remove" title="Entfernen">✕</button>
+          </div>
+        </div>
+        <label class="field"><span>Quelle</span>
+          <select data-i="${i}" data-role="source-type">${typeOpts}</select></label>
+        ${this._sourceFieldHtml(section, i)}
+        <label class="field"><span>Überschrift (optional)</span>
+          <input type="text" placeholder="Standard je nach Quelle" data-i="${i}" data-role="title"
+            value="${escapeHtml(section.title || "")}"></label>
+        <label class="field"><span>Meldungen in diesem Abschnitt (optional)</span>
+          <input type="number" min="1" max="20" placeholder="global: ${this._config.max_items || 5}"
+            data-i="${i}" data-role="max_items" value="${section.max_items != null ? section.max_items : ""}"></label>
+      </div>`;
+    }
+
+    _render() {
+      if (!this._config) return;
+      const c = this._config;
+      const sectionsHtml = c.sections.map((s, i) => this._sectionHtml(s, i, c.sections.length)).join("");
+      this.innerHTML = `
+        <style>
+          .mbe { display: flex; flex-direction: column; gap: 16px; padding: 4px 0; }
+          .mbe .group { display: flex; flex-direction: column; gap: 12px; }
+          .mbe .field { display: flex; flex-direction: column; gap: 4px;
+            font-size: 0.8em; color: var(--secondary-text-color, #666); }
+          .mbe .field.switch { flex-direction: row; align-items: center; gap: 8px;
+            font-size: 0.95em; color: var(--primary-text-color, #000); }
+          .mbe input[type=text], .mbe input[type=number], .mbe select {
+            padding: 8px 10px; border: 1px solid var(--divider-color, #ccc); border-radius: 6px;
+            background: var(--card-background-color, #fff); color: var(--primary-text-color, #000);
+            font-size: 1rem; font-family: inherit; width: 100%; box-sizing: border-box; }
+          .mbe .section-card { border: 1px solid var(--divider-color, #ccc); border-radius: 10px;
+            padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+          .mbe .se-head { display: flex; align-items: center; justify-content: space-between; }
+          .mbe .se-title { font-weight: 600; color: var(--primary-text-color, #000); }
+          .mbe .se-actions { display: flex; gap: 4px; }
+          .mbe button { cursor: pointer; border: 1px solid var(--divider-color, #ccc);
+            border-radius: 6px; background: var(--card-background-color, #fff);
+            color: var(--primary-text-color, #000); padding: 4px 9px; font-size: 0.95em; }
+          .mbe button:disabled { opacity: 0.35; cursor: default; }
+          .mbe .add { align-self: flex-start; padding: 9px 16px; font-weight: 600;
+            color: var(--primary-color, #03a9f4); border-color: var(--primary-color, #03a9f4); }
+          .mbe .hint { font-size: 0.78em; color: var(--secondary-text-color, #888); margin-top: -4px; }
+          .mbe .sec-heading { font-size: 0.78em; letter-spacing: 0.08em; text-transform: uppercase;
+            color: var(--secondary-text-color, #888); font-weight: 600; }
+        </style>
+        <div class="mbe">
+          <div class="group">
+            <label class="field"><span>Kartentitel</span>
+              <input type="text" placeholder="Morgenbriefing" data-role="title" value="${escapeHtml(c.title || "")}"></label>
+            <label class="field"><span>Meldungen pro Abschnitt (Standard)</span>
+              <input type="number" min="1" max="20" placeholder="5" data-role="max_items"
+                value="${c.max_items != null ? c.max_items : ""}"></label>
+            <label class="field switch">
+              <input type="checkbox" data-role="show_time"${c.show_time === false ? "" : " checked"}>
+              Zeitstempel anzeigen</label>
+          </div>
+          <div class="sec-heading">Abschnitte</div>
+          ${sectionsHtml}
+          <button class="add" data-act="add">+ Abschnitt hinzufügen</button>
+        </div>
+        ${this._datalists()}`;
+      this._bind();
+    }
+
+    _bind() {
+      // Text-/Zahlenfelder: ohne Neu-Rendern aktualisieren (Fokus bleibt)
+      this.querySelectorAll('input[type=text], input[type=number]').forEach((el) => {
+        el.addEventListener("input", () => {
+          const i = el.dataset.i != null ? Number(el.dataset.i) : null;
+          this._set(i, el.dataset.role, el.value.trim());
+        });
+      });
+      // Checkbox Zeitstempel
+      const showTime = this.querySelector('input[data-role="show_time"]');
+      if (showTime) showTime.addEventListener("change", () => {
+        if (showTime.checked) delete this._config.show_time; else this._config.show_time = false;
+        this._emit();
+      });
+      // Auswahlfelder
+      this.querySelectorAll("select").forEach((el) => {
+        el.addEventListener("change", () => {
+          const i = Number(el.dataset.i);
+          const role = el.dataset.role;
+          if (role === "source-type") this._setSourceType(i, el.value);
+          else { this._set(i, role, el.value); if (role === "region") this._render(); }
+        });
+      });
+      // Buttons (Hinzufügen / Verschieben / Entfernen)
+      this.querySelectorAll("button").forEach((el) => {
+        el.addEventListener("click", () => {
+          const act = el.dataset.act;
+          if (act === "add") return this._addSection();
+          const i = Number(el.dataset.i);
+          if (act === "up") this._moveSection(i, -1);
+          else if (act === "down") this._moveSection(i, 1);
+          else if (act === "remove") this._removeSection(i);
+        });
+      });
+    }
+  }
+
+  function clean(obj) {
+    const out = {};
+    for (const k of Object.keys(obj)) if (obj[k] != null && obj[k] !== "") out[k] = obj[k];
+    return out;
+  }
+
+  customElements.define("morgenbriefing-card-editor", MorgenbriefingCardEditor);
   customElements.define("morgenbriefing-card", MorgenbriefingCard);
   window.customCards = window.customCards || [];
   window.customCards.push({
     type: "morgenbriefing-card",
     name: "Morgenbriefing Card",
     description: "News-Karte mit Standard-Feeds (tagesschau, Google News, Regionalsender u. a.), automatischer Regional-Erkennung per HA-Standort/GPS, Google-News-Suche, eigenen RSS-URLs und vorhandenen Feed-Sensoren.",
+    preview: true,
+    documentationURL: "https://github.com/renespeaker/ha-news-card",
   });
 })();

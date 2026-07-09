@@ -7,9 +7,27 @@ oder GPS, **Google-News-Suchfeeds** für beliebige Orte/Begriffe, **eigenen
 RSS-Links** und Unterstützung für **vorhandene Feed-Sensoren**, falls RSS in
 Home Assistant schon genutzt wird.
 
+## Einrichten ohne YAML: der visuelle Editor
+
+Die Karte bringt ein **grafisches Einstellungsmenü** mit – YAML ist optional.
+Dashboard → Bearbeiten → Karte hinzufügen → „Morgenbriefing Card", oder bei
+einer bestehenden Karte auf das **Zahnrad** klicken. Dort lässt sich alles per
+Klick und Eingabefeld einstellen:
+
+- **Kartentitel**, **Meldungen pro Abschnitt** und **Zeitstempel** (an/aus)
+- **Abschnitte** hinzufügen, entfernen und per ↑/↓ umsortieren
+- pro Abschnitt die **Quelle** aus einer Liste wählen: Standard-Feed (Preset),
+  Region (automatisch/fest), Google-News-Suche, eigener RSS-Link oder ein
+  vorhandener Sensor – die passenden Felder erscheinen automatisch
+- Sensor- und Tracker-Felder schlagen passende Entitäten aus deiner Instanz vor
+
+Die folgende YAML-Referenz brauchst du nur, wenn du lieber im Code
+konfigurierst oder Feinheiten nachschlagen willst.
+
 ## Fünf Wege, eine Quelle einzubinden
 
-Jeder Abschnitt (`sections`) der Karte bekommt seine News auf einem von fünf Wegen:
+Jeder Abschnitt (`sections`) der Karte bekommt seine News auf einem von fünf
+Wegen – im Editor als Auswahlliste, in YAML als Schlüssel:
 
 ```yaml
 type: custom:morgenbriefing-card

@@ -23,15 +23,16 @@ sensor:
       minutes: 30
     inclusions: [title, link, published]
 
-  # ── Regional: passenden Block einkommentieren ────────────────────────
-  # NRW (WDR)
-  # - platform: feedparser
-  #   name: News WDR
-  #   feed_url: "https://www1.wdr.de/uebersicht-100.feed"
-  #   date_format: "%d.%m. %H:%M"
-  #   local_time: true
-  #   scan_interval: { minutes: 30 }
-  #   inclusions: [title, link, published]
+  # ── Regional: uncomment the block you need ───────────────────────────
+  # NRW (WDR) – active as the default region; swap for another block below.
+  - platform: feedparser
+    name: News WDR
+    feed_url: "https://www1.wdr.de/uebersicht-100.feed"
+    date_format: "%d.%m. %H:%M"
+    local_time: true
+    scan_interval:
+      minutes: 30
+    inclusions: [title, link, published]
 
   # Niedersachsen (NDR)
   # - platform: feedparser

@@ -118,7 +118,12 @@ in the browser (15-minute cache). If the news site blocks that via CORS, the
 card shows a hint to create a sensor for that feed. The same applies to `url:`
 and `google:` entries.
 
-## Create the standard sensors (recommended)
+## Create the standard sensors (recommended for most feeds)
+
+> **Seeing a "CORS" message on the card?** That's expected: browsers block
+> loading RSS feeds from other sites directly, so most feeds (tagesschau, WDR,
+> …) only work through a server-side sensor. Set up the package below and the
+> card picks the sensor up automatically.
 
 So that all feeds load reliably server-side:
 

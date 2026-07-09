@@ -135,7 +135,9 @@
       entity_missing: (id) => `Entity ${id} not found.`,
       entity_no_entries: (id) => `${id} has no "entries" attribute (Feedparser sensor expected).`,
       no_source: "No source set (preset, url, entity, google or region).",
-      cors: 'Direct fetch blocked (CORS). Create a Feedparser sensor for this feed and bind it via "entity:" – see README.',
+      cors: (hint) => hint
+        ? `Direct fetch blocked by the browser (CORS). Create the sensor ${hint} with the Feedparser integration so Home Assistant loads this feed server-side – copy examples/packages/news-card.yaml, see README.`
+        : 'Direct fetch blocked by the browser (CORS). Create a Feedparser sensor for this feed and bind it via "entity:" – see README.',
       region_pick: "Please choose a region in the settings.",
       tracker_missing: (id) => `Tracker ${id} not found.`,
       no_location: "No location available – set the Home Assistant location or add a tracker.",
@@ -185,7 +187,9 @@
       entity_missing: (id) => `Entität ${id} nicht gefunden.`,
       entity_no_entries: (id) => `${id} hat kein "entries"-Attribut (Feedparser-Sensor erwartet).`,
       no_source: "Keine Quelle angegeben (preset, url, entity, google oder region).",
-      cors: 'Direkter Abruf blockiert (CORS). Lege für diesen Feed einen Feedparser-Sensor an und binde ihn per "entity:" ein – siehe README.',
+      cors: (hint) => hint
+        ? `Direkter Abruf vom Browser blockiert (CORS). Lege den Sensor ${hint} mit der Feedparser-Integration an, damit Home Assistant diesen Feed serverseitig lädt – kopiere examples/packages/news-card.yaml, siehe README.`
+        : 'Direkter Abruf vom Browser blockiert (CORS). Lege für diesen Feed einen Feedparser-Sensor an und binde ihn per "entity:" ein – siehe README.',
       region_pick: "Bitte Region in den Einstellungen wählen.",
       tracker_missing: (id) => `Tracker ${id} nicht gefunden.`,
       no_location: "Kein Standort verfügbar – HA-Standort setzen oder Tracker angeben.",
@@ -412,9 +416,11 @@
         || (preset && preset.url);
       if (!url) return { title, error: t.no_source };
 
+      // If this feed comes from a preset, name the exact sensor to create.
+      const sensorHint = section.preset ? `sensor.news_${section.preset}` : null;
       const cached = feedCache.get(url);
       if (cached && Date.now() - cached.ts < FETCH_TTL_MS) {
-        if (cached.error) return { title, error: t.cors };
+        if (cached.error) return { title, error: t.cors(sensorHint) };
         return { title, items: (cached.items || []).slice(0, maxItems) };
       }
       if (!cached || !cached.pending) {

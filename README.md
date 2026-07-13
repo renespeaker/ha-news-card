@@ -9,6 +9,14 @@ support for **existing feed sensors** if you already use RSS in Home Assistant.
 The interface is available in **English and German** and follows your Home
 Assistant language automatically (override with the `language` option).
 
+<p align="center">
+  <img src="docs/screenshot-card.png" alt="News Card on a dashboard" width="45%">
+  &nbsp;&nbsp;
+  <img src="docs/screenshot-editor.png" alt="Visual editor" width="45%">
+</p>
+
+<p align="center"><em>The card on a dashboard (left) and its visual editor (right).</em></p>
+
 ## Configure without YAML: the visual editor
 
 The card ships a **graphical settings menu** – YAML is optional.

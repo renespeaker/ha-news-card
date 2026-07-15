@@ -1,0 +1,13 @@
+{
+  "domain": "news_card",
+  "name": "News Card",
+  "codeowners": ["@renespeaker"],
+  "config_flow": true,
+  "dependencies": ["http", "frontend"],
+  "documentation": "https://github.com/renespeaker/ha-news-card",
+  "integration_type": "service",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/renespeaker/ha-news-card/issues",
+  "requirements": ["feedparser==6.0.11"],
+  "version": "1.0.0"
+}

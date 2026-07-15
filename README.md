@@ -6,6 +6,11 @@ Google News), **automatic region detection** from the HA location or GPS,
 **Google News search feeds** for any place or topic, **custom RSS links**, and
 support for **existing feed sensors** if you already use RSS in Home Assistant.
 
+News Card is a **Home Assistant integration**: it loads the feeds
+**server-side**, so the browser never runs into CORS blocks, and it **ships the
+Lovelace card and registers it automatically**. One install gives you both the
+data and the card – no manual sensors, no YAML, no CORS workarounds.
+
 The interface is available in **English and German** and follows your Home
 Assistant language automatically (override with the `language` option).
 
@@ -84,15 +89,33 @@ third parties.
 ### Via HACS (recommended)
 
 1. HACS → ⋮ → **Custom repositories**
-2. Repository `https://github.com/renespeaker/ha-news-card`, type **Dashboard**
-3. Install "News Card" – HACS registers the resource automatically.
+2. Repository `https://github.com/renespeaker/ha-news-card`, type **Integration**
+3. Install "News Card" and **restart Home Assistant**.
+4. Settings → **Devices & Services** → **Add Integration** → search
+   **News Card** → pick the feeds you want and an update interval.
+
+That's it – the integration loads the chosen feeds server-side, creates a
+`sensor.news_<key>` for each, and registers the Lovelace card automatically.
+Add it to a dashboard: **Edit dashboard → Add card → "News Card"**. If the card
+type isn't found right away, hard-refresh the browser once (Ctrl+F5).
+
+> **Upgrading from the old card-only version?** News Card used to be a HACS
+> **Dashboard** plugin. It is now an **Integration** that includes the card. In
+> HACS remove the old "Dashboard" entry, add the repository again as an
+> **Integration**, and you can delete the manual `/local/news-card.js` resource
+> under Settings → Dashboards → Resources.
 
 ### Manual
 
-Copy `dist/news-card.js` to `/config/www/`, then:
-Settings → Dashboards → ⋮ → **Resources** → Add →
-URL `/local/news-card.js`, type **JavaScript module**. Clear the browser cache
-(Ctrl+F5).
+Copy the `custom_components/news_card` folder into your `/config/custom_components/`
+directory and restart Home Assistant, then add the integration as in step 4
+above.
+
+### Add feeds later
+
+Settings → Devices & Services → **News Card** → **Configure** to change which
+feeds are loaded, add your own (`Name | https://…/feed.xml`, one per line), or
+adjust the update interval.
 
 ## Presets (built-in standard feeds)
 
@@ -127,56 +150,31 @@ search feed automatically – handy for local news about your town or topics suc
 as a club name. Google News links go through news.google.com to the article,
 and titles include the source name.
 
-**How the card resolves a preset source:** if the sensor `sensor.news_<preset>`
-exists (from the example package), it is used – the most reliable path, because
-Home Assistant loads the feed server-side. Otherwise the card fetches directly
-in the browser (15-minute cache). If the news site blocks that via CORS, the
-card shows a hint to create a sensor for that feed. The same applies to `url:`
-and `google:` entries.
+**How the card resolves a preset source:** it uses the sensor
+`sensor.news_<preset>` created by the integration – Home Assistant loads that
+feed **server-side**, so there is no CORS issue. Enable the matching preset in
+the integration's options and the card picks the sensor up automatically. The
+same convention applies to `region: auto` (it maps to a preset and looks for
+its sensor).
 
-## Create the standard sensors (recommended for most feeds)
+> **No headlines / a "CORS" message?** That means no server-side sensor exists
+> for that feed yet. Open the integration's **Configure** dialog and enable the
+> preset (e.g. `wdr` for NRW). The card only falls back to a direct browser
+> fetch when no sensor is present – and browsers block most news feeds via CORS.
 
-> **Seeing a "CORS" message on the card?** That's expected: browsers block
-> loading RSS feeds from other sites directly, so most feeds (tagesschau, WDR,
-> …) only work through a server-side sensor. Set up the package below and the
-> card picks the sensor up automatically.
+### Advanced: other ways to feed the card
 
-So that all feeds load reliably server-side:
+You normally don't need these – the integration handles feeds for you. They
+remain available for special cases:
 
-1. Install the HACS integration **feedparser** (`custom-components/feedparser`)
-   and restart Home Assistant.
-2. Copy [`examples/packages/news-card.yaml`](examples/packages/news-card.yaml)
-   to `/config/packages/` and enable packages:
-   ```yaml
-   homeassistant:
-     packages: !include_dir_named packages
-   ```
-3. Uncomment the regional block you need, add your own feeds, restart HA.
-
-**Already using Feedparser/RSS sensors?** Then skip this step – bind existing
-sensors via `entity:` (an `entries` attribute with `title`, `link`, `published`
-is expected).
-
-### Alternative to sensors: a CORS proxy
-
-If you'd rather not set up sensors, point `cors_proxy` at a proxy that adds the
-missing CORS headers. The card then loads browser-blocked feeds (WDR,
-tagesschau, …) through it – no sensor needed. Set it in the visual editor
-(**CORS proxy**) or in YAML:
-
-```yaml
-type: custom:news-card
-cors_proxy: "https://corsproxy.io/?url="   # or your own proxy
-sections:
-  - region: auto
-```
-
-- The card appends the URL-encoded feed address. If your proxy needs the URL
-  somewhere else, use `{url}` as a placeholder
-  (e.g. `https://my.proxy/get?target={url}`).
-- **Trade-off:** feed requests then pass through that third party and depend on
-  its availability. For a self-hosted, private setup the server-side sensors
-  above are the more robust choice. `cors_proxy` is off by default.
+- **Existing Feedparser/RSS sensors:** bind them via `entity:` (an `entries`
+  attribute with `title`, `link`, `published` is expected).
+- **CORS proxy:** set `cors_proxy` on the card to load a feed directly in the
+  browser through a proxy that adds the missing CORS headers. The card appends
+  the URL-encoded feed address, or substitutes a `{url}` placeholder
+  (e.g. `https://my.proxy/get?target={url}`). Feed requests then pass through
+  that third party – the integration's server-side sensors are the more robust
+  choice. Off by default.
 
 ## Card options
 

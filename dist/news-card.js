@@ -91,7 +91,7 @@
     [53.55, 9.99, "hamburg"],
     [52.37, 9.73, "niedersachsen"], [53.14, 8.21, "niedersachsen"], [53.25, 10.41, "niedersachsen"],
     [52.27, 10.52, "niedersachsen"], [52.28, 8.05, "niedersachsen"], [53.53, 7.10, "niedersachsen"],
-    [53.52, 8.11, "niedersachsen"], [53.87, 8.70, "niedersachsen"],
+    [53.52, 8.11, "niedersachsen"], [53.87, 8.70, "niedersachsen"], [51.53, 9.94, "niedersachsen"], // Göttingen (south)
     [53.08, 8.80, "bremen"], [53.55, 8.58, "bremen"],
     [53.63, 11.41, "mecklenburg_vorpommern"], [54.09, 12.14, "mecklenburg_vorpommern"],
     [53.56, 13.26, "mecklenburg_vorpommern"], [54.31, 13.09, "mecklenburg_vorpommern"],
@@ -102,15 +102,19 @@
     [50.98, 11.03, "thueringen"], [50.93, 11.59, "thueringen"], [50.52, 10.42, "thueringen"],
     [50.94, 6.96, "nordrhein_westfalen"], [51.45, 7.01, "nordrhein_westfalen"], [51.51, 7.47, "nordrhein_westfalen"],
     [51.96, 7.63, "nordrhein_westfalen"], [52.03, 8.53, "nordrhein_westfalen"], [50.73, 7.10, "nordrhein_westfalen"],
+    [50.87, 8.02, "nordrhein_westfalen"], // Siegen (Südwestfalen)
     [50.11, 8.68, "hessen"], [51.31, 9.50, "hessen"], [50.58, 8.68, "hessen"], [49.87, 8.65, "hessen"],
-    [50.55, 9.67, "hessen"],
+    [50.55, 9.67, "hessen"], [50.08, 8.24, "hessen"], // Wiesbaden (capital, faces Mainz)
+    [49.99, 8.41, "hessen"], [50.39, 8.06, "hessen"], // Rüsselsheim, Limburg a.d. Lahn
     [50.00, 8.27, "rheinland_pfalz"], [49.75, 6.64, "rheinland_pfalz"], [50.35, 7.60, "rheinland_pfalz"],
     [49.44, 7.77, "rheinland_pfalz"], [49.32, 8.43, "rheinland_pfalz"], [49.48, 8.43, "rheinland_pfalz"],
+    [50.44, 7.83, "rheinland_pfalz"], [49.63, 8.30, "rheinland_pfalz"], // Montabaur/Westerwald, Worms
     [49.23, 7.00, "saarland"], [49.47, 6.65, "saarland"],
     [48.78, 9.18, "baden_wuerttemberg"], [47.99, 7.85, "baden_wuerttemberg"], [49.49, 8.47, "baden_wuerttemberg"],
     [47.66, 9.18, "baden_wuerttemberg"], [49.01, 8.40, "baden_wuerttemberg"], [48.40, 9.99, "baden_wuerttemberg"],
     [48.14, 11.58, "bayern"], [49.45, 11.08, "bayern"], [49.79, 9.94, "bayern"], [48.37, 10.90, "bayern"],
     [49.02, 12.10, "bayern"], [50.32, 11.92, "bayern"], [47.57, 10.70, "bayern"], [48.57, 13.45, "bayern"],
+    [49.97, 9.15, "bayern"], [50.26, 10.96, "bayern"], // Aschaffenburg (Untermain), Coburg (Oberfranken)
   ];
 
   function nearestRegionKey(lat, lon) {

@@ -62,6 +62,17 @@
     return `https://news.google.com/rss/search?q=${encodeURIComponent(term)}&hl=de&gl=DE&ceid=DE:de`;
   }
 
+  // Optional CORS proxy for feeds that browsers can't fetch directly (most
+  // broadcasters). "{url}" is replaced with the encoded feed URL; without a
+  // placeholder the encoded URL is appended (e.g. https://corsproxy.io/?url=).
+  function proxied(proxy, url) {
+    const p = (proxy || "").trim();
+    if (!p) return url;
+    return p.includes("{url}")
+      ? p.replace("{url}", encodeURIComponent(url))
+      : p + encodeURIComponent(url);
+  }
+
   // region: -> federal-state feed. Where a state has no stable ARD feed as a
   // preset, the Google News search feed for that state is used instead.
   const REGIONS = {
@@ -91,7 +102,7 @@
     [53.55, 9.99, "hamburg"],
     [52.37, 9.73, "niedersachsen"], [53.14, 8.21, "niedersachsen"], [53.25, 10.41, "niedersachsen"],
     [52.27, 10.52, "niedersachsen"], [52.28, 8.05, "niedersachsen"], [53.53, 7.10, "niedersachsen"],
-    [53.52, 8.11, "niedersachsen"], [53.87, 8.70, "niedersachsen"],
+    [53.52, 8.11, "niedersachsen"], [53.87, 8.70, "niedersachsen"], [51.53, 9.94, "niedersachsen"], // Göttingen (south)
     [53.08, 8.80, "bremen"], [53.55, 8.58, "bremen"],
     [53.63, 11.41, "mecklenburg_vorpommern"], [54.09, 12.14, "mecklenburg_vorpommern"],
     [53.56, 13.26, "mecklenburg_vorpommern"], [54.31, 13.09, "mecklenburg_vorpommern"],
@@ -102,15 +113,19 @@
     [50.98, 11.03, "thueringen"], [50.93, 11.59, "thueringen"], [50.52, 10.42, "thueringen"],
     [50.94, 6.96, "nordrhein_westfalen"], [51.45, 7.01, "nordrhein_westfalen"], [51.51, 7.47, "nordrhein_westfalen"],
     [51.96, 7.63, "nordrhein_westfalen"], [52.03, 8.53, "nordrhein_westfalen"], [50.73, 7.10, "nordrhein_westfalen"],
+    [50.87, 8.02, "nordrhein_westfalen"], // Siegen (Südwestfalen)
     [50.11, 8.68, "hessen"], [51.31, 9.50, "hessen"], [50.58, 8.68, "hessen"], [49.87, 8.65, "hessen"],
-    [50.55, 9.67, "hessen"],
+    [50.55, 9.67, "hessen"], [50.08, 8.24, "hessen"], // Wiesbaden (capital, faces Mainz)
+    [49.99, 8.41, "hessen"], [50.39, 8.06, "hessen"], // Rüsselsheim, Limburg a.d. Lahn
     [50.00, 8.27, "rheinland_pfalz"], [49.75, 6.64, "rheinland_pfalz"], [50.35, 7.60, "rheinland_pfalz"],
     [49.44, 7.77, "rheinland_pfalz"], [49.32, 8.43, "rheinland_pfalz"], [49.48, 8.43, "rheinland_pfalz"],
+    [50.44, 7.83, "rheinland_pfalz"], [49.63, 8.30, "rheinland_pfalz"], // Montabaur/Westerwald, Worms
     [49.23, 7.00, "saarland"], [49.47, 6.65, "saarland"],
     [48.78, 9.18, "baden_wuerttemberg"], [47.99, 7.85, "baden_wuerttemberg"], [49.49, 8.47, "baden_wuerttemberg"],
     [47.66, 9.18, "baden_wuerttemberg"], [49.01, 8.40, "baden_wuerttemberg"], [48.40, 9.99, "baden_wuerttemberg"],
     [48.14, 11.58, "bayern"], [49.45, 11.08, "bayern"], [49.79, 9.94, "bayern"], [48.37, 10.90, "bayern"],
     [49.02, 12.10, "bayern"], [50.32, 11.92, "bayern"], [47.57, 10.70, "bayern"], [48.57, 13.45, "bayern"],
+    [49.97, 9.15, "bayern"], [50.26, 10.96, "bayern"], // Aschaffenburg (Untermain), Coburg (Oberfranken)
   ];
 
   function nearestRegionKey(lat, lon) {
@@ -145,8 +160,9 @@
       entity_no_entries: (id) => `${id} has no "entries" attribute (Feedparser sensor expected).`,
       no_source: "No source set (preset, url, entity, google or region).",
       cors: (hint) => hint
-        ? `Direct fetch blocked by the browser (CORS). Create the sensor ${hint} with the Feedparser integration so Home Assistant loads this feed server-side – copy examples/packages/news-card.yaml, see README.`
-        : 'Direct fetch blocked by the browser (CORS). Create a Feedparser sensor for this feed and bind it via "entity:" – see README.',
+        ? `Direct fetch blocked by the browser (CORS). Create the sensor ${hint} with the Feedparser integration so Home Assistant loads this feed server-side – copy examples/packages/news-card.yaml, see README. Or set a "cors_proxy" in the card options.`
+        : 'Direct fetch blocked by the browser (CORS). Create a Feedparser sensor for this feed and bind it via "entity:", or set a "cors_proxy" in the card options – see README.',
+      proxy_failed: "Feed could not be loaded through the configured cors_proxy. Check the proxy URL, or create a Feedparser sensor instead (see README).",
       region_pick: "Please choose a region in the settings.",
       tracker_missing: (id) => `Tracker ${id} not found.`,
       no_location: "No location available – set the Home Assistant location or add a tracker.",
@@ -160,6 +176,8 @@
       ed_card_title: "Card title",
       ed_max_items: "Headlines per section (default)",
       ed_show_time: "Show timestamps",
+      ed_cors_proxy: "CORS proxy (optional)",
+      ed_cors_proxy_hint: 'Loads feeds that browsers block (e.g. WDR) through this proxy, so no sensor is needed. Leave empty to use server-side sensors instead. Use "{url}" as a placeholder, or a URL ending in "?url=".',
       ed_sections: "Sections",
       ed_section_n: (n) => `Section ${n}`,
       ed_up: "Move up", ed_down: "Move down", ed_remove: "Remove",
@@ -197,8 +215,9 @@
       entity_no_entries: (id) => `${id} hat kein "entries"-Attribut (Feedparser-Sensor erwartet).`,
       no_source: "Keine Quelle angegeben (preset, url, entity, google oder region).",
       cors: (hint) => hint
-        ? `Direkter Abruf vom Browser blockiert (CORS). Lege den Sensor ${hint} mit der Feedparser-Integration an, damit Home Assistant diesen Feed serverseitig lädt – kopiere examples/packages/news-card.yaml, siehe README.`
-        : 'Direkter Abruf vom Browser blockiert (CORS). Lege für diesen Feed einen Feedparser-Sensor an und binde ihn per "entity:" ein – siehe README.',
+        ? `Direkter Abruf vom Browser blockiert (CORS). Lege den Sensor ${hint} mit der Feedparser-Integration an, damit Home Assistant diesen Feed serverseitig lädt – kopiere examples/packages/news-card.yaml, siehe README. Oder setze in den Kartenoptionen einen "cors_proxy".`
+        : 'Direkter Abruf vom Browser blockiert (CORS). Lege für diesen Feed einen Feedparser-Sensor an und binde ihn per "entity:" ein, oder setze in den Kartenoptionen einen "cors_proxy" – siehe README.',
+      proxy_failed: 'Feed konnte nicht über den konfigurierten cors_proxy geladen werden. Prüfe die Proxy-URL oder lege stattdessen einen Feedparser-Sensor an (siehe README).',
       region_pick: "Bitte Region in den Einstellungen wählen.",
       tracker_missing: (id) => `Tracker ${id} nicht gefunden.`,
       no_location: "Kein Standort verfügbar – HA-Standort setzen oder Tracker angeben.",
@@ -212,6 +231,8 @@
       ed_card_title: "Kartentitel",
       ed_max_items: "Meldungen pro Abschnitt (Standard)",
       ed_show_time: "Zeitstempel anzeigen",
+      ed_cors_proxy: "CORS-Proxy (optional)",
+      ed_cors_proxy_hint: 'Lädt vom Browser blockierte Feeds (z. B. WDR) über diesen Proxy – dann ist kein Sensor nötig. Leer lassen, um stattdessen serverseitige Sensoren zu nutzen. "{url}" als Platzhalter oder eine URL mit "?url=" am Ende.',
       ed_sections: "Abschnitte",
       ed_section_n: (n) => `Abschnitt ${n}`,
       ed_up: "Nach oben", ed_down: "Nach unten", ed_remove: "Entfernen",
@@ -427,20 +448,25 @@
 
       // If this feed comes from a preset, name the exact sensor to create.
       const sensorHint = section.preset ? `sensor.news_${section.preset}` : null;
-      const cached = feedCache.get(url);
+      const proxy = (this._config.cors_proxy || "").trim();
+      const failMsg = proxy ? t.proxy_failed : t.cors(sensorHint);
+      // Cache is keyed by the actually fetched URL, so adding or changing the
+      // proxy re-fetches instead of reusing a stale direct-fetch error.
+      const fetchUrl = proxied(proxy, url);
+      const cached = feedCache.get(fetchUrl);
       if (cached && Date.now() - cached.ts < FETCH_TTL_MS) {
-        if (cached.error) return { title, error: t.cors(sensorHint) };
+        if (cached.error) return { title, error: failMsg };
         return { title, items: (cached.items || []).slice(0, maxItems) };
       }
       if (!cached || !cached.pending) {
-        feedCache.set(url, { ts: Date.now(), pending: true, items: cached && cached.items });
-        fetch(url, { mode: "cors" })
+        feedCache.set(fetchUrl, { ts: Date.now(), pending: true, items: cached && cached.items });
+        fetch(fetchUrl, { mode: "cors" })
           .then((r) => {
             if (!r.ok) throw new Error(`HTTP ${r.status}`);
             return r.text();
           })
-          .then((text) => feedCache.set(url, { ts: Date.now(), items: parseFeed(text) }))
-          .catch(() => feedCache.set(url, { ts: Date.now(), error: "cors" }))
+          .then((text) => feedCache.set(fetchUrl, { ts: Date.now(), items: parseFeed(text) }))
+          .catch(() => feedCache.set(fetchUrl, { ts: Date.now(), error: "fetch" }))
           .finally(() => this._render());
       }
       if (cached && cached.items) return { title, items: cached.items.slice(0, maxItems) };
@@ -533,7 +559,7 @@
         : [{ preset: "tagesschau" }];
       this._config = { type: config.type || "custom:news-card",
         language: config.language, title: config.title, max_items: config.max_items,
-        show_time: config.show_time, sections };
+        show_time: config.show_time, cors_proxy: config.cors_proxy, sections };
       this._render();
     }
 
@@ -551,6 +577,7 @@
       if (c.title) out.title = c.title;
       if (c.max_items) out.max_items = Number(c.max_items);
       if (c.show_time === false) out.show_time = false;
+      if (c.cors_proxy) out.cors_proxy = c.cors_proxy;
       out.sections = c.sections.map((s) => {
         const type = sectionSourceType(s);
         const sec = {};
@@ -730,6 +757,10 @@
             <label class="field switch">
               <input type="checkbox" data-role="show_time"${c.show_time === false ? "" : " checked"}>
               ${escapeHtml(t.ed_show_time)}</label>
+            <label class="field"><span>${escapeHtml(t.ed_cors_proxy)}</span>
+              <input type="text" placeholder="https://corsproxy.io/?url=" data-role="cors_proxy"
+                value="${escapeHtml(c.cors_proxy || "")}"></label>
+            <div class="hint">${escapeHtml(t.ed_cors_proxy_hint)}</div>
           </div>
           <div class="sec-heading">${escapeHtml(t.ed_sections)}</div>
           ${sectionsHtml}

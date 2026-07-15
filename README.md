@@ -157,6 +157,27 @@ So that all feeds load reliably server-side:
 sensors via `entity:` (an `entries` attribute with `title`, `link`, `published`
 is expected).
 
+### Alternative to sensors: a CORS proxy
+
+If you'd rather not set up sensors, point `cors_proxy` at a proxy that adds the
+missing CORS headers. The card then loads browser-blocked feeds (WDR,
+tagesschau, …) through it – no sensor needed. Set it in the visual editor
+(**CORS proxy**) or in YAML:
+
+```yaml
+type: custom:news-card
+cors_proxy: "https://corsproxy.io/?url="   # or your own proxy
+sections:
+  - region: auto
+```
+
+- The card appends the URL-encoded feed address. If your proxy needs the URL
+  somewhere else, use `{url}` as a placeholder
+  (e.g. `https://my.proxy/get?target={url}`).
+- **Trade-off:** feed requests then pass through that third party and depend on
+  its availability. For a self-hosted, private setup the server-side sensors
+  above are the more robust choice. `cors_proxy` is off by default.
+
 ## Card options
 
 | Option | Default | Description |
@@ -165,6 +186,7 @@ is expected).
 | `title` | `News Card` | card title |
 | `max_items` | `5` | headlines per section (global or per section) |
 | `show_time` | `true` | show timestamps |
+| `cors_proxy` | – | optional proxy for browser-blocked feeds (see below) |
 | `region` (per section) | – | `auto` (HA location/GPS) or a fixed state key |
 | `tracker` (per section) | – | person/device tracker as the GPS source for `region: auto` |
 

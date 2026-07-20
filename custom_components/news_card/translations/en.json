@@ -1,0 +1,31 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "News Card",
+        "description": "Choose the feeds Home Assistant should load server-side. They appear as sensor.news_<key> and are picked up automatically by the News Card.",
+        "data": {
+          "presets": "Standard feeds",
+          "custom": "Custom feeds (one per line: Name | https://…/feed.xml)",
+          "scan_interval": "Update interval (minutes)"
+        }
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "News Card is already configured. Use its options to change the feeds."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "News Card feeds",
+        "description": "Change which feeds are loaded and how often.",
+        "data": {
+          "presets": "Standard feeds",
+          "custom": "Custom feeds (one per line: Name | https://…/feed.xml)",
+          "scan_interval": "Update interval (minutes)"
+        }
+      }
+    }
+  }
+}

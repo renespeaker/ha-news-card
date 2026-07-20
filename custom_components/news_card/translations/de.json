@@ -1,0 +1,31 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "News Card",
+        "description": "Wähle die Feeds, die Home Assistant serverseitig laden soll. Sie erscheinen als sensor.news_<key> und werden von der News Card automatisch erkannt.",
+        "data": {
+          "presets": "Standard-Feeds",
+          "custom": "Eigene Feeds (eine pro Zeile: Name | https://…/feed.xml)",
+          "scan_interval": "Aktualisierungsintervall (Minuten)"
+        }
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "News Card ist bereits eingerichtet. Ändere die Feeds über die Optionen."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "News-Card-Feeds",
+        "description": "Ändere, welche Feeds geladen werden und wie oft.",
+        "data": {
+          "presets": "Standard-Feeds",
+          "custom": "Eigene Feeds (eine pro Zeile: Name | https://…/feed.xml)",
+          "scan_interval": "Aktualisierungsintervall (Minuten)"
+        }
+      }
+    }
+  }
+}
